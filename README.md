@@ -83,6 +83,7 @@ AgriPulse was built by a student technology team exploring how NASA Earth data c
 - [Data sources, third-party credits, media rights and AI disclosure audit](CREDITS-AND-SOURCES.md)
 - [29-asset visual/video/PDF rights and origin register](audit/ASSET-PROVENANCE-REGISTER.csv)
 - [Media rights review and urgent fixes](audit/MEDIA-AND-SUBMISSION-REVIEW.md)
+- [Open blocker: resolve SI media, NASA logo and watermark evidence](https://github.com/ameer-marwan/AgriPulse/issues/6)
 - [Ready-to-copy NASA submission source fields](audit/SPACE-APPS-FORM-LINKS.md)
 
 **Transparency:** the repository includes development from before the 14 November 2026 hackathon start. Confirm eligibility and any reuse rules with organizers. Connected NASA POWER historical data and NASA GIBS visual map layers must not be described as validated field-level irrigation predictions; see the checklists above.
