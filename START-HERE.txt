@@ -1,34 +1,48 @@
-FIELDSHIFT 3.0 — FINAL WEBSITE
+AGRIPULSE — START HERE (NASA SPACE APPS 2026)
 
-QUICKEST WAY TO OPEN
-Open FieldShift-Final.html in a full desktop browser.
-All application code, design assets and the map library are embedded in this file.
-Live weather, place search, maps and NASA historical data need internet access.
+PUBLIC DEMO
+https://agripulse-1.vercel.app/
 
-ON A PHONE
-Open the file in a full browser, not a document previewer. For reliable phone
-access, upload the dist folder to any static web host and visit its HTTPS link.
+SOURCE AND SCIENTIFIC LIMITATIONS
+https://github.com/ameer-marwan/AgriPulse/blob/main/README.md
+https://github.com/ameer-marwan/AgriPulse/blob/main/DATA-SOURCES.md
+https://github.com/ameer-marwan/AgriPulse/blob/main/ROTATION-EXPLORER.md
 
-EDITABLE WEBSITE
-The dist folder is the complete modular website. With Node 20 or newer installed,
-open a terminal in this folder, run npm run dev, then visit http://127.0.0.1:4173.
-No npm installation is needed to run it. Press Ctrl+C to stop the local server.
+CREDITS, SI/AI DISCLOSURE AND MEDIA RIGHTS REVIEW
+https://github.com/ameer-marwan/AgriPulse/blob/main/CREDITS-AND-SOURCES.md
+https://github.com/ameer-marwan/AgriPulse/blob/main/audit/ASSET-PROVENANCE-REGISTER.csv
 
-START WITH YOUR OWN LAND
-1. Use the location selector to search a place or enter coordinates.
-2. Draw a boundary or import a GeoJSON Polygon if you know your field edges.
-3. Add dated soil records; use a sample's pH in the crop planner if appropriate.
-4. Compare rotations and enter local yield, price and cost assumptions.
-5. Save a path, plan your season, add observations, and export your report.
+RUN LOCALLY
+Use Node.js 22.13 or later and run:
+  npm run dev
+Then open:
+  http://127.0.0.1:4173
 
-Each field has its own budget, planning inputs, schedule, scenarios and records.
-Example values are identified. Weather and shallow soil moisture are modeled.
-Scheduling and climate what-if values are scenarios, not predictions of yield.
-The field assistant explains your visible evidence; OpenAI is not connected.
+Before merging code, verify:
+  npm run check
+  npm test
+  npm run build
 
-KEEP YOUR WORK
-Your records live in the current browser. Export a full workspace from Settings,
-especially after adding observations or photos. Different browsers and file paths
-can have separate storage. The supplied website includes no personal field data.
+QUICK DEMO
+1) Choose a real location or coordinates.
+2) Reports -> Load NASA climate context (past-year historical NASA POWER grids).
+3) Crop planner -> select a current crop, local water access, optional measured pH, and priority -> Compare paths.
+4) Review three illustrative crop-family pathways and the provenance/limitations.
+5) Add a dated soil record if available; enter your own price/cost/yield assumptions and export a report.
 
-Read README.md for sources, limitations, source editing and verification commands.
+DATA HONESTY
+- NASA POWER: historical regional-grid climate information, NOT live farm sensors or near-term weather forecasts.
+- NASA GIBS: visible map imagery (SMAP, IMERG, MODIS, SRTM), NOT numerical field estimates in crop/irrigation calculations.
+- Open-Meteo: current modeled weather + short forecast; NOT NASA weather.
+- Crop pathways: exploratory family-diversity sequences, NOT validated planting/irrigation recommendations.
+- Profit: scenarios calculated from user-entered values; NOT real observed farm profit.
+- Source code and tests include documented 14 Nov 2026 ChatGPT assistance.
+- Media licenses, SI watermarks and the old 8-slide concept PDF require team review: see CREDITS-AND-SOURCES.md.
+
+SUBMISSION STATUS
+The GitHub project alone does not confirm the latest NASA Team Submission. The team owner must check the logged-in team Project page after any changes, and confirm that it remains Submitted for Judging.
+
+OWNER ACTIONS
+- Confirm media provenance, watermark and rights; see open issue #6.
+- Confirm eligibility and prior-hackathon development with NASA organizers.
+- Preserve original version history and do not misstate which data functions are working.
