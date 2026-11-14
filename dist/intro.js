@@ -120,12 +120,12 @@ export function initIntro({ language = 'en' } = {}) {
     <div class="ap-space" aria-hidden="true"><div class="ap-starfield ap-stars-far"></div><div class="ap-starfield ap-stars-near"></div></div>
     <div class="ap-earth-stage" aria-hidden="true"><div class="ap-atmosphere"></div><div class="ap-earth-fallback"></div><canvas class="ap-earth-canvas"></canvas><div class="ap-earth-glint"></div></div>
     <div class="ap-landscape" aria-hidden="true"></div><div class="ap-dive-light" aria-hidden="true"></div>
-    <header class="ap-intro-header"><div class="ap-intro-wordmark"><img src="assets/logo-new.png" alt=""><span>AgriPulse</span></div><button class="ap-intro-skip intro-skip" type="button"></button></header>
+    <header class="ap-intro-header"><div class="ap-intro-wordmark"><img src="assets/logo-new.png" alt=""><span>AgriPulse</span></div><div class="ap-intro-actions"><button class="ap-intro-skip intro-skip" type="button"></button><button class="ap-intro-demo" type="button"></button></div></header>
     <div class="ap-orbit-caption" aria-hidden="true"><span class="ap-coordinate">EARTH / 01</span><p></p></div>
     <div class="ap-plant-scene" aria-hidden="true">
       <div class="ap-plant-glow"></div>
       <canvas class="ap-plant-canvas"></canvas>
-      <img class="ap-plant-photo" src="assets/intro-plant.jpg" alt="" decoding="async" fetchpriority="high">
+      <img class="ap-plant-photo" data-src="assets/intro-plant.jpg" alt="" decoding="async">
       <div class="ap-macro-light"></div>
       <div class="ap-plant-particle ap-particle-one"></div><div class="ap-plant-particle ap-particle-two"></div><div class="ap-plant-particle ap-particle-three"></div>
       <span class="ap-plant-note">EARTH OBSERVATIONS → NEW POSSIBILITIES</span>
@@ -137,8 +137,13 @@ export function initIntro({ language = 'en' } = {}) {
   document.body.append(overlay);
   const enter = overlay.querySelector('.ap-intro-enter');
   const skip = overlay.querySelector('.ap-intro-skip');
+  const demo = overlay.querySelector('.ap-intro-demo');
+  const watch = document.createElement('button');
+  watch.type = 'button';
+  watch.className = 'ap-watch-intro';
   const content = overlay.querySelector('.ap-intro-copy');
   const modePicker = overlay.querySelector('.ap-mode-picker');
+  modePicker.append(watch);
   const status = overlay.querySelector('.ap-intro-status');
   const caption = overlay.querySelector('.ap-orbit-caption p');
   const row = document.createElement('div');
@@ -163,6 +168,8 @@ export function initIntro({ language = 'en' } = {}) {
     modePicker.querySelector('.ap-advanced-mode small').textContent = words.advancedBody;
     modePicker.querySelector('.ap-advanced-mode .ap-mode-action').textContent = words.chooseAdvanced;
     skip.textContent = words.skip;
+    demo.textContent = current === 'ar' ? 'جرّب حقلًا تجريبيًا' : current === 'fr' ? 'Essayer un champ exemple' : 'Try an example field';
+    watch.textContent = current === 'ar' ? 'شاهد المقدمة' : current === 'fr' ? 'Voir l’introduction' : 'Watch introduction';
     overlay.querySelectorAll('.ap-journey-steps b').forEach((step, index) => { step.textContent = words.steps[index]; });
     row.querySelector('b').textContent = words.replay;
     row.querySelector('p').textContent = words.replayBody;
@@ -242,7 +249,13 @@ export function initIntro({ language = 'en' } = {}) {
   function tick(now) {
     if (!opened) return;
     const elapsed = now - startedAt;
-    if (elapsed >= 2200) overlay.classList.add('ap-diving', 'zooming');
+    if (elapsed >= 2200 && !overlay.classList.contains('ap-diving')) {
+      overlay.classList.add('ap-diving', 'zooming');
+      loadPlantPhoto();
+      const scene = overlay.querySelector('.ap-plant-scene');
+      scene.classList.remove('ap-photo-ready');
+      try { plantRenderer = createPlantGrowth(overlay.querySelector('.ap-plant-canvas'), scene); } catch { plantRenderer = null; }
+    }
     if (elapsed >= 3000 && elapsed < 3900) { overlay.classList.add('ap-land'); setStage('land'); }
     if (elapsed >= 3900 && elapsed < 8000) { overlay.classList.add('ap-land', 'ap-growing'); setStage('grow'); }
     if (elapsed >= 8000) {
@@ -258,7 +271,12 @@ export function initIntro({ language = 'en' } = {}) {
     animationFrame = requestAnimationFrame(tick);
   }
 
-  function open() {
+  function loadPlantPhoto() {
+    const photo = overlay.querySelector('.ap-plant-photo');
+    if (!photo.src) photo.src = photo.dataset.src;
+  }
+
+  function open({ animate = true } = {}) {
     halt();
     clearTimeout(hideTimer);
     if (!opened) returnFocus = document.activeElement;
@@ -272,7 +290,12 @@ export function initIntro({ language = 'en' } = {}) {
     lockPage(true);
     applyCopy();
     void overlay.offsetWidth;
+    if (!animate) {
+      showModePicker();
+      return;
+    }
     if (reducedMotion.matches) {
+      loadPlantPhoto();
       overlay.classList.add('ap-static', 'ap-land', 'ap-growing');
       setStage('ready');
       enter.focus({ preventScroll: true });
@@ -284,9 +307,6 @@ export function initIntro({ language = 'en' } = {}) {
     fallback.hidden = false;
     overlay.querySelector('.ap-earth-canvas').classList.remove('texture-ready');
     try { renderer = createEarthRenderer(overlay.querySelector('.ap-earth-canvas'), fallback); } catch { renderer = null; }
-    const plantScene = overlay.querySelector('.ap-plant-scene');
-    plantScene.classList.remove('ap-photo-ready');
-    try { plantRenderer = createPlantGrowth(overlay.querySelector('.ap-plant-canvas'), plantScene); } catch { plantRenderer = null; }
     startedAt = performance.now();
     lastDraw = 0;
     skip.focus({ preventScroll: true });
@@ -313,7 +333,12 @@ export function initIntro({ language = 'en' } = {}) {
   skip.addEventListener('click', showModePicker);
   modePicker.querySelector('.ap-simple-mode').addEventListener('click', () => chooseMode('simple'));
   modePicker.querySelector('.ap-advanced-mode').addEventListener('click', () => chooseMode('advanced'));
-  row.querySelector('button').addEventListener('click', open);
+  row.querySelector('button').addEventListener('click', () => open());
+  watch.addEventListener('click', () => open());
+  demo.addEventListener('click', () => {
+    window.dispatchEvent(new CustomEvent('agripulse:demo'));
+    close();
+  });
   overlay.addEventListener('keydown', onKeydown);
   window.addEventListener('fieldshift:language', onLanguage);
   reducedMotion.addEventListener('change', onMotionChange);
@@ -322,7 +347,7 @@ export function initIntro({ language = 'en' } = {}) {
   applyCopy();
   let seen = false;
   try { seen = sessionStorage.getItem('agripulse.intro.seen.growth.v1') === '1'; } catch { /* No-storage visits can still use the introduction. */ }
-  if (!seen) open();
+  if (!seen && !location.hash) open({ animate: false });
   else document.body.classList.remove('intro-pending');
   return { open, close };
 }

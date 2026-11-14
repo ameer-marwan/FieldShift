@@ -1,5 +1,6 @@
 /** Field-scoped seasonal planning. All stress cases are explicit sensitivities. */
 import {workspaceStorage} from './storage.js';
+import { t, currentLanguage } from './i18n.js';
 const $ = q => document.querySelector(q);
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const finite = v => typeof v === 'number' && Number.isFinite(v);
@@ -64,37 +65,94 @@ export function initPlanning({getState,fieldKey,toast,crops}){
     renderTimeline();renderAlerts();renderScenario();renderNotes();renderEvidence();renderReport();
   }
   function stages(){const r=record();let day=0;return stageNames.map((name,i)=>{const from=new Date(r.planting+'T12:00:00Z');from.setUTCDate(from.getUTCDate()+day);day+=r.durations[i];const until=new Date(r.planting+'T12:00:00Z');until.setUTCDate(until.getUTCDate()+day-1);return {name,days:r.durations[i],start:from.toISOString().slice(0,10),end:until.toISOString().slice(0,10)};});}
-  function renderTimeline(){const now=today();$('#planning-timeline').innerHTML=stages().map((s,i)=>`<div class="planning-stage ${now>=s.start&&now<=s.end?'current':''}"><span class="planning-stage-number">0${i+1}</span><b>${s.name}</b><small>${s.start} → ${s.end}</small><span>${s.days} days · assumed</span></div>`).join('');}
+  function renderTimeline(){const now=today();$('#planning-timeline').innerHTML=stages().map((s,i)=>`<div class="planning-stage ${now>=s.start&&now<=s.end?'current':''}"><span class="planning-stage-number">0${i+1}</span><b>${esc(t(s.name))}</b><small><bdi>${s.start} → ${s.end}</bdi></small><span>${format(s.days)} ${esc(t('days · assumed'))}</span></div>`).join('');}
   function renderAlerts(){const w=getState().weather,items=[];
-    if(w){for(const d of w.daily){if(finite(d.rain)&&d.rain>=15)items.push({date:d.date,title:'Rain may limit field access',value:d.rain.toFixed(1)+' mm forecast',text:'Check drainage and soil bearing strength before machinery enters.'});if(finite(d.high)&&d.high>=35)items.push({date:d.date,title:'Heat stress watch',value:d.high.toFixed(1)+'°C high',text:'Review crop stage and water access; schedule strenuous work for cooler hours.'});if(finite(d.low)&&d.low<=0)items.push({date:d.date,title:'Frost watch',value:d.low.toFixed(1)+'°C low',text:'Check local forecast detail and crop sensitivity before planting decisions.'});}
+    if(w?.source?.includes('Open-Meteo')){for(const d of w.daily){if(finite(d.rain)&&d.rain>=15)items.push({date:d.date,title:'Rain may limit field access',value:d.rain.toFixed(1)+' mm forecast',text:'Check drainage and soil bearing strength before machinery enters.'});if(finite(d.high)&&d.high>=35)items.push({date:d.date,title:'Heat stress watch',value:d.high.toFixed(1)+'°C high',text:'Review crop stage and water access; schedule strenuous work for cooler hours.'});if(finite(d.low)&&d.low<=0)items.push({date:d.date,title:'Frost watch',value:d.low.toFixed(1)+'°C low',text:'Check local forecast detail and crop sensitivity before planting decisions.'});}
       const winds=w.hourly.filter(h=>h.time>=w.current.time&&finite(h.wind)&&h.wind>=35);if(winds.length)items.unshift({date:winds[0].time.replace('T',' '),title:'Strong wind watch',value:winds[0].wind.toFixed(0)+' km/h',text:'Check local conditions, equipment limits, and spray labels.'});else if(finite(w.current.wind)&&w.current.wind>=35)items.unshift({date:w.current.time,title:'Current strong wind signal',value:w.current.wind.toFixed(0)+' km/h',text:'Current model analysis; review fieldwork and product limits.'});
     }
-    $('#planning-alerts').innerHTML=!w?'<div class="planning-empty">No weather available for this field. Refresh the forecast to see fieldwork signals.</div>':items.length?items.slice(0,8).map(a=>`<div class="planning-alert"><span class="eyebrow">${esc(a.date)}</span><h3>${esc(a.title)}</h3><b>${esc(a.value)}</b><p>${esc(a.text)}</p></div>`).join(''):'<div class="planning-empty">No heat, frost, heavy-rain, or available strong-wind signal meets these screening thresholds. Confirm soil and local conditions before fieldwork.</div>';
+    $('#planning-alerts').innerHTML=!w?.source?.includes('Open-Meteo')?'<div class="planning-empty">No weather available for this field. Refresh the forecast to see fieldwork signals.</div>':items.length?items.slice(0,8).map(a=>`<div class="planning-alert"><span class="eyebrow">${esc(a.date)}</span><h3>${esc(a.title)}</h3><b>${esc(a.value)}</b><p>${esc(a.text)}</p></div>`).join(''):'<div class="planning-empty">No heat, frost, heavy-rain, or available strong-wind signal meets these screening thresholds. Confirm soil and local conditions before fieldwork.</div>';
   }
   function renderScenario(){const r=record(),w=getState().weather;$('#planning-temperature-label').textContent=(r.temperature>=0?'+':'')+r.temperature+'°C';$('#planning-rainfall-label').textContent=(r.rainfall>=0?'+':'')+r.rainfall+'%';
-    $('#planning-scenario').innerHTML=w?`<div class="planning-table-wrap"><table><thead><tr><th>Forecast day</th><th>Baseline high</th><th>Scenario high</th><th>Baseline rain</th><th>Scenario rain</th></tr></thead><tbody>${w.daily.map(d=>`<tr><td>${esc(d.date)}</td><td>${finite(d.high)?d.high.toFixed(1)+'°C':'Unavailable'}</td><td class="planning-value">${finite(d.high)?(d.high+r.temperature).toFixed(1)+'°C':'Unavailable'}</td><td>${finite(d.rain)?d.rain.toFixed(1)+' mm':'Unavailable'}</td><td class="planning-value">${finite(d.rain)?(d.rain*(1+r.rainfall/100)).toFixed(1)+' mm':'Unavailable'}</td></tr>`).join('')}</tbody></table></div>`:'<div class="planning-empty">A forecast for the selected point is required to calculate this sensitivity case.</div>';
+    $('#planning-scenario').innerHTML=w?.source?.includes('Open-Meteo')?`<div class="planning-table-wrap"><table><thead><tr><th>Forecast day</th><th>Baseline high</th><th>Scenario high</th><th>Baseline rain</th><th>Scenario rain</th></tr></thead><tbody>${w.daily.map(d=>`<tr><td>${esc(d.date)}</td><td>${finite(d.high)?d.high.toFixed(1)+'°C':'Unavailable'}</td><td class="planning-value">${finite(d.high)?(d.high+r.temperature).toFixed(1)+'°C':'Unavailable'}</td><td>${finite(d.rain)?d.rain.toFixed(1)+' mm':'Unavailable'}</td><td class="planning-value">${finite(d.rain)?(d.rain*(1+r.rainfall/100)).toFixed(1)+' mm':'Unavailable'}</td></tr>`).join('')}</tbody></table></div>`:'<div class="planning-empty">A forecast for the selected point is required to calculate this sensitivity case.</div>';
     renderReport();
   }
   function renderNotes(){const notes=record().notes;$('#planning-notes-list').innerHTML=notes.length?notes.map(n=>`<article class="planning-note">${n.photo?`<img src="${esc(n.photo)}" alt="Field observation dated ${esc(n.date)}" loading="lazy">`:''}<div><span class="eyebrow">${esc(n.date)} · ${esc(n.category)}</span><p>${esc(n.text)}</p><button class="button secondary small" data-note-remove="${esc(n.id)}">Remove observation</button></div></article>`).join(''):'<div class="planning-empty">No observations for this field yet. Add a dated note from your next visit.</div>';}
   function evidence(){const s=getState(),samples=s.samples.filter(x=>x.field===fieldKey());return [{name:'Field location',status:s.location.method==='Example location'?'Example selected':'User selected',detail:s.location.name+' · '+fieldKey(),href:'#/map',complete:s.location.method!=='Example location'},{name:'Weather & surface moisture',status:s.weather?'Modeled':'Missing',detail:s.weather?'Reference-grid forecast; shallow moisture is 0–1 cm.':'Refresh weather for this field.',href:'#/weather',complete:!!s.weather},{name:'Local soil evidence',status:samples.length?'User records':'Missing',detail:samples.length?samples.length+' dated sample(s); verify source, depth and relevance.':'Add pH or organic carbon from your field records.',href:'#/soil',complete:!!samples.length},{name:'Crop & economics',status:'Planning assumptions',detail:'Crop traits and entered costs support scenarios, not a validated yield prediction.',href:'#/profit',complete:!!s.plans.filter(p=>p.field===fieldKey()).length}];}
   function renderEvidence(){const rows=evidence();$('#planning-evidence-grid').innerHTML=rows.map(r=>`<a class="planning-evidence-card" href="${r.href}"><span class="eyebrow">${r.name}</span><b>${esc(r.status)}</b><p>${esc(r.detail)}</p></a>`).join('');const steps=[{title:'Choose your actual land',text:'Search a place, enter coordinates, or draw a boundary.',href:'#/map',done:rows[0].complete},{title:'Add a dated soil record',text:'Keep your sample method and depth with the result.',href:'#/soil',done:rows[2].complete},{title:'Compare and save a rotation',text:'Choose crop history, water access and your priorities.',href:'#/crops',done:rows[3].complete},{title:'Review local costs and price',text:'Replace example assumptions and inspect the margin.',href:'#/profit',done:!!getState().fieldSettings?.[fieldKey()]?.economicsReviewed}];const html=steps.map((s,i)=>`<a class="planning-check-step ${s.done?'done':''}" href="${s.href}"><span>${s.done?'✓':'0'+(i+1)}</span><div><b>${s.title}</b><small>${s.text}</small></div><em aria-hidden="true">→</em></a>`).join('');$('#planning-checklist').innerHTML=html;$('#planning-guide-steps').innerHTML=html;}
-  function reportDetails(s){
-    const table=(heads,rows)=>`<div class="planning-table-wrap"><table><thead><tr>${heads.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.map(row=>`<tr>${row.map(v=>`<td>${esc(v)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
-    const heading=v=>`<h3 class="planning-report-heading">${esc(v)}</h3>`;
-    const plan=s.rotationOptions.find(p=>p.id===s.selectedPlan),saved=s.plans.filter(p=>p.field===fieldKey());
-    let html=heading('Rotation choice & reasoning')+`<p class="fine-print">${saved.length} saved plan(s) for this field. ${plan?'<b>'+esc(plan.name)+'</b><br>'+plan.sequence.map(id=>esc(crops.find(c=>c.id===id)?.name||id)).join(' → ')+'<br>'+plan.reasons.map(esc).join(' '):'No rotation selected.'} General crop-trait screening; local suitability remains to be checked.</p>`;
-    const e=s.economics,a=s.economicsInputs,currency=e?.currency||a.currency||'USD',value=n=>finite(n)?n.toLocaleString(undefined,{maximumFractionDigits:2}):'Unavailable';
-    html+=heading('Economics · entered assumptions');
-    html+=table(['Assumption','Entered value','Unit'],[
-      ['Field area',value(a.areaHa),'ha'],['Expected yield',value(a.yieldTonnesHa),'t/ha'],['Sale price',value(a.pricePerTonne),currency+'/t'],['Seed cost',value(a.seedCostHa),currency+'/ha'],['Fertilizer cost',value(a.fertilizerCostHa),currency+'/ha'],['Water cost',value(a.waterCostHa),currency+'/ha'],['Operations cost',value(a.operationsCostHa),currency+'/ha'],['Calculated revenue',value(e?.revenue),currency+' total'],['Calculated entered costs',value(e?.cost),currency+' total'],['Calculated gross margin',value(e?.margin),currency+' total'],['Calculated gross margin / ha',value(e?.perHa?.margin),currency+'/ha']]);
-    html+='<p class="fine-print">Example or user-entered values, not verified local prices or predicted yield. Gross margin includes only listed costs; land, finance, tax, storage and other unentered overheads are excluded.</p>';
-    const samples=s.samples.filter(x=>x.field===fieldKey());html+=heading('Local soil evidence · '+samples.length+' sample(s)');
-    html+=samples.length?table(['Collection date','Sample','pH','Carbon (%)','Depth (cm)','Source / method'],samples.map(x=>[x.date,x.name,finite(x.ph)?x.ph:'Unavailable',finite(x.carbon)?x.carbon:'Unavailable',finite(x.depth)?x.depth:'Unavailable',x.method])):'<p class="fine-print">No dated local soil samples recorded for this selected field.</p>';
-    const n=s.nasa;if(n?.location?.lat===s.location.lat&&n?.location?.lon===s.location.lon){html+=heading('NASA POWER historical context · '+n.year)+`<p class="fine-print">${esc(n.limitations)} Retrieved ${esc(n.retrievedAt)}.</p>`+table(['Month','Mean temperature (°C)','Total rainfall (mm)'],n.months.map(m=>[m.month,value(m.temperature),value(m.rain)]));}
-    else html+=heading('NASA historical context')+'<p class="fine-print">Not loaded for this selected field. Use “Load NASA climate context” to add historical monthly data.</p>';
+  const format = value => finite(value)
+    ? new Intl.NumberFormat(currentLanguage(), { maximumFractionDigits: 2 }).format(value)
+    : t('Unavailable');
+  const dateLabel = value => new Intl.DateTimeFormat(currentLanguage(), { calendar:'gregory', timeZone:'UTC', dateStyle:'medium' })
+    .format(new Date(value + 'T12:00:00Z'));
+  const l = value => esc(t(value));
+  const reportHeading = value => '<h3 class="planning-report-heading">' + l(value) + '</h3>';
+  function reportTable(headers, rows) {
+    return '<div class="planning-table-wrap"><table><thead><tr>' +
+      headers.map(label => '<th scope="col">' + l(label) + '</th>').join('') +
+      '</tr></thead><tbody>' + rows.map(row => '<tr>' + row.map(value => '<td><bdi>' + esc(value) + '</bdi></td>').join('') + '</tr>').join('') +
+      '</tbody></table></div>';
+  }
+  function reportDetails(s) {
+    const plan = s.rotationOptions.find(p => p.id === s.selectedPlan);
+    const saved = s.plans.filter(p => p.field === fieldKey());
+    let html = reportHeading('Rotation choice & reasoning') + '<p class="fine-print">' + l('Saved paths') + ' · ' +
+      format(saved.length) + '<br>' + (plan ? '<b>' + l(plan.name) + '</b><br>' +
+      plan.sequence.map(id => l(crops.find(c => c.id === id)?.name || id)).join(' → ') + '<br>' +
+      plan.reasons.map(l).join(' ') : l('No rotation selected.')) + '</p>';
+    const e = s.economics, a = s.economicsInputs, currency = e?.currency || a.currency || 'USD';
+    const perHa = currency + ' / ' + t('ha');
+    html += reportHeading('Economics · entered assumptions') + reportTable(['Assumption', 'Entered value', 'Unit'], [
+      [t('Field area'), format(a.areaHa), t('ha')],
+      [t('Expected yield'), format(a.yieldTonnesHa), t('t/ha')],
+      [t('Sale price'), format(a.pricePerTonne), currency + ' / ' + t('tonne')],
+      [t('Seed cost'), format(a.seedCostHa), perHa],
+      [t('Fertilizer cost'), format(a.fertilizerCostHa), perHa],
+      [t('Water cost'), format(a.waterCostHa), perHa],
+      [t('Operations cost'), format(a.operationsCostHa), perHa],
+      [t('Calculated revenue'), format(e?.revenue), currency],
+      [t('Calculated entered costs'), format(e?.cost), currency],
+      [t('Calculated gross margin'), format(e?.margin), currency],
+      [t('Calculated gross margin / ha'), format(e?.perHa?.margin), perHa],
+    ]);
+    html += '<p class="fine-print">' + l('Example or user-entered values, not verified local prices or predicted yield. Gross margin includes only listed costs; land, finance, tax, storage and other unentered overheads are excluded.') + '</p>';
+    const samples = s.samples.filter(sample => sample.field === fieldKey());
+    html += reportHeading('Local soil evidence') + (samples.length
+      ? reportTable(['Collection date', 'Sample', 'pH', 'Carbon (%)', 'Depth (cm)', 'Source / method'],
+          samples.map(sample => [sample.date, sample.name, format(sample.ph), format(sample.carbon), format(sample.depth), t(sample.method)]))
+      : '<p class="fine-print">' + l('No dated local soil samples recorded for this selected field.') + '</p>');
+    const nasa = s.nasa;
+    html += reportHeading('NASA POWER historical context');
+    if (nasa?.location?.lat === s.location.lat && nasa?.location?.lon === s.location.lon) {
+      html += '<p class="fine-print"><bdi>' + esc(format(nasa.year)) + '</bdi> · ' + l(nasa.limitations) + '</p>' +
+        reportTable(['Month', 'Mean temperature (°C)', 'Total rainfall (mm)'],
+          nasa.months.map(month => [format(month.month), format(month.temperature), format(month.rain)]));
+    } else {
+      html += '<p class="fine-print">' + l('Not loaded for this selected field. Use “Load NASA climate context” to add historical monthly data.') + '</p>';
+    }
     return html;
   }
-  function renderReport(){if(!$('#planning-report-body'))return;const r=record(),s=getState(),crop=crops.find(c=>c.id===r.crop)?.name||r.crop;$('#planning-report-body').innerHTML=`<div class="planning-report-context"><b>${esc(s.location.name)}</b><span>${esc(fieldKey())} · ${esc(crop)}</span></div><p class="fine-print">Planned planting: ${esc(r.planting)}. Schedule durations are user assumptions. Scenario: temperature ${r.temperature>=0?'+':''}${r.temperature}°C; rainfall ${r.rainfall>=0?'+':''}${r.rainfall}% relative to the current seven-day forecast.</p><div class="planning-table-wrap"><table><thead><tr><th>Stage</th><th>Start</th><th>End</th><th>Assumed days</th></tr></thead><tbody>${stages().map(x=>`<tr><td>${x.name}</td><td>${x.start}</td><td>${x.end}</td><td>${x.days}</td></tr>`).join('')}</tbody></table></div>${reportDetails(s)}<h3 class="planning-report-heading">Dated observations · ${r.notes.length}</h3>${r.notes.length?r.notes.map(n=>`<p class="fine-print"><b>${esc(n.date)} · ${esc(n.category)}</b><br>${esc(n.text)}${n.photo?'<br>Photo attached in season backup.':''}</p>`).join(''):'<p class="fine-print">No observations recorded for this field.</p>'}<p class="fine-print">Evidence: ${evidence().map(x=>esc(x.name)+': '+esc(x.status)).join(' · ')}.</p>`;}
+  function renderReport() {
+    const host = $('#planning-report-body');
+    if (!host) return;
+    const r = record(), s = getState();
+    if (['Unselected', 'Example location'].includes(s.location.method)) {
+      host.innerHTML = '<p class="fine-print">' + l('Choose a field to load your planning appendix.') + '</p>';
+      return;
+    }
+    const crop = crops.find(c => c.id === r.crop)?.name || r.crop;
+    const field = s.location.name === 'My current location' ? t(s.location.name) : s.location.name;
+    const notes = r.notes.map(note => '<p class="fine-print"><b>' + esc(note.date) + ' · ' + l(note.category) +
+      '</b><br>' + esc(note.text) + (note.photo ? '<br>' + l('Photo attached in season backup.') : '') + '</p>').join('');
+    host.innerHTML = '<div class="planning-report-context"><b>' + esc(field) + '</b><span><bdi>' +
+      esc(fieldKey()) + '</bdi> · ' + l(crop) + '</span></div><p class="fine-print">' +
+      l('Planned planting') + ' · <bdi>' + esc(dateLabel(r.planting)) + '</bdi>. ' + l('Schedule durations are user assumptions.') +
+      '</p>' + reportTable(['Stage', 'Start', 'End', 'Assumed days'], stages().map(stage =>
+        [t(stage.name), dateLabel(stage.start), dateLabel(stage.end), format(stage.days)])) +
+      reportDetails(s) + reportHeading('Dated observations') +
+      (notes || '<p class="fine-print">' + l('No observations recorded for this field.') + '</p>') +
+      '<p class="fine-print">' + l('Evidence') + ' · ' + evidence().map(item => l(item.name) + ' · ' + l(item.status)).join(' / ') + '</p>';
+  }
+  window.addEventListener('fieldshift:language', render);
   render();
   // The inline checklist guides first visits without interrupting field selection.
 }

@@ -70,3 +70,29 @@ body.simple-farmer.light .simple-farmer-view{background:#f5faf4!important;color:
 #simple-report-hero .report-climate th,
 #simple-report-hero .report-climate td { padding: 6px; text-align: start; border-bottom: 1px solid var(--border); }
 #simple-report-hero .report-climate meter { width: 60px; vertical-align: middle; }
+
+.rotation-comparison { margin-block: 1rem; }
+.rotation-comparison-form, .rotation-plan-editors, .rotation-season { display: grid; gap: .7rem; }
+.rotation-comparison-form > label { max-width: 24rem; }
+.rotation-plan-editors { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.rotation-plan-editors fieldset { min-width: 0; border: 1px solid var(--border); border-radius: .9rem; padding: .9rem; }
+.rotation-season { margin-block: .65rem; }
+.rotation-season h3 { font-size: 1rem; margin: 0; }
+.rotation-results { margin-block: 1rem; }
+.rotation-results h2, .rotation-results h3 { margin-block: .7rem .3rem; }
+.rotation-results ul { padding-inline-start: 1.25rem; }
+.rotation-scroll { overflow-x: auto; }
+.rotation-results table { width: 100%; margin-block: .6rem; border-collapse: collapse; }
+.rotation-results th, .rotation-results td { padding: .5rem; border-block-end: 1px solid var(--border); text-align: start; }
+.rotation-summary, .rotation-example-label { padding: .55rem .8rem; border-inline-start: 3px solid var(--accent); background: var(--surface-2); }
+#view-demo, body.simple-farmer main > #view-demo:not([hidden]) { max-width: 68rem; margin-inline: auto; }
+body.simple-farmer main > #view-demo:not([hidden]) { display: block !important; padding-inline: clamp(10px, 5vw, 30px); }
+#view-demo .page-heading { gap: 1rem; flex-wrap: wrap; }
+#home-map-host[hidden], #simple-map-host[hidden], .rotation-comparison-form[hidden] { display: none; }
+@media (max-width: 540px) {
+  .rotation-plan-editors { grid-template-columns: minmax(0, 1fr); }
+  .rotation-plan-editors fieldset { padding: .6rem; }
+}
+@media print {
+  .rotation-results table { break-inside: avoid; }
+}
