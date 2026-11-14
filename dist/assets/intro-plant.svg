@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-label="Illustrative plant sprout — SI-generated conceptual illustration, not observational imagery">
+<title>Illustrative plant sprout | SI-generated conceptual visual</title>
+<defs>
+<linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#152C25"/><stop offset=".83" stop-color="#203E29"/></linearGradient>
+<radialGradient id="sun" cx=".75" cy=".3"><stop offset="0" stop-color="#FFF9DD" stop-opacity=".82"/><stop offset="1" stop-color="#FFF9DD" stop-opacity="0"/></radialGradient>
+<linearGradient id="earthShine" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#DDF5FF" stop-opacity=".45"/><stop offset=".6" stop-color="#0074B5" stop-opacity="0"/><stop offset="1" stop-color="#05243B" stop-opacity=".5"/></linearGradient>
+</defs>
+<rect width="1600" height="900" fill="url(#sky)"/>
+<rect width="1600" height="900" fill="url(#sun)"/>
+<circle cx="1240" cy="200" r="83" fill="#F7E9B4" fill-opacity=".7"/>
+<path d="M0 670Q450 620 800 670T1600 640V900H0Z" fill="#223D29"/><path d="M0 755H1600V900H0Z" fill="#8AC44D"/><path d="M808 710Q790 580 803 420" stroke="#9FDA6A" stroke-width="25" fill="none"/><path d="M802 520Q685 490 665 370Q810 380 820 520Z" fill="#5ABF63"/><path d="M804 448Q830 285 990 290Q970 446 804 448Z" fill="#9BD352"/><circle cx="790" cy="245" r="12" fill="#E8F4BB"/>
+<rect x="42" y="810" width="700" height="54" rx="12" fill="#061720" fill-opacity=".76"/>
+<text x="63" y="844" fill="#E9F9ED" font-size="24" font-family="Arial,sans-serif" font-weight="700" letter-spacing="1">SI-GENERATED VISUAL · ILLUSTRATION</text>
+</svg>
