@@ -163,6 +163,8 @@ export async function fetchNasa(point, { signal } = {}) {
 
 /**
  * Exploratory crop-family pathways based on USDA-NRCS crop-rotation principles.
+ * AI-use metadata: the 14 Nov 2026 exploratory rotation design/implementation
+ * was assisted by OpenAI ChatGPT; independent agronomic validation is pending.
  * These are NOT validated crop recommendations: no FAO GAEZ suitability,
  * planting-calendar, irrigation requirement, or yield model is connected.
  * NASA POWER rainfall, when loaded, is descriptive historical evidence.

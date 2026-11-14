@@ -145,3 +145,21 @@ body.simple-farmer.light .simple-farmer-view{background:#f5faf4!important;color:
     grid-template-columns: 1fr;
   }
 }
+
+
+/* Source provenance notice — provider attribution is visible in advanced and guided modes. */
+.app-footer .footer-source-note {
+  width: 100%; flex-basis: 100%; margin: 4px 0 0;
+  padding-top: 12px; border-top: 1px solid var(--border);
+  line-height: 1.65; font-size: 10px; letter-spacing: normal;
+  color: var(--muted); text-transform: none;
+}
+.app-footer .footer-source-note a,
+.simple-source-note a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+.simple-source-note {
+  margin: 0 auto 16px; max-width: 1060px; padding: 10px 16px;
+  border: 1px solid var(--border); border-radius: 8px;
+  background: var(--panel, #f4f8f0); color: var(--muted);
+  font: 11px/1.65 'DM Sans', sans-serif;
+  text-align: center; overflow-wrap: anywhere;
+}

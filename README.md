@@ -10,9 +10,11 @@ AgriPulse is an interactive agricultural decision workspace created for the **20
 
 **[Open the public AgriPulse preview →](https://agripulse-1.vercel.app/)**
 
-**[↓ Download the “From Space to Soil” presentation](https://github.com/ameer-marwan/AgriPulse/raw/main/media/AgriPulse_Space_to_Soil.pdf)**
+**[Read the verified crop-rotation demo and limitations](ROTATION-EXPLORER.md)**
 
-**[↓ Download “How NASA Data Solves Farming’s Biggest Problem”](https://github.com/ameer-marwan/AgriPulse/raw/main/media/how-nasa-data-solves-farming.mp4)**
+**[Read sources, third-party notices, media rights and SI disclosure](CREDITS-AND-SOURCES.md)**
+
+> **Legacy media warning:** The older `media/AgriPulse_Space_to_Soil.pdf` is an **8-page, image-only conceptual deck**, *not* the verified seven-slide judging presentation. Its slides include planned irrigation-alert and water-saving claims that the source code does not validate. The two `media/*.mp4` videos and promotional thumbnail have unresolved author/AI/watermark provenance and should not be presented as cleared judging media until reviewed. Their files remain in the repository for an auditable history.
 
 ![AgriPulse field view](dist/assets/field-landscape.jpg)
 
@@ -50,7 +52,7 @@ AgriPulse separates **live modeled forecasts**, **historical regional context**,
 ### Connected public sources
 
 - [NASA POWER](https://power.larc.nasa.gov/) — regional temperature, rainfall, humidity, wind, and solar records.
-- [NASA GIBS / Worldview](https://worldview.earthdata.nasa.gov/) — Blue Marble, MODIS/VIIRS, SRTM, GPM/IMERG, and SMAP map layers.
+- [NASA GIBS / Worldview](https://worldview.earthdata.nasa.gov/) — Blue Marble, MODIS Terra NDVI, SRTM, GPM/IMERG, and SMAP **visual map layers** (not numeric field measurements).
 - [Open-Meteo forecast API](https://open-meteo.com/en/docs) — current modeled conditions and short-range forecast used for the live weather scene.
 - [Open-Meteo geocoding](https://geocoding-api.open-meteo.com/) — place-name search and coordinates.
 
@@ -79,6 +81,10 @@ AgriPulse was built by a student technology team exploring how NASA Earth data c
 - [Submission, public-demo verification and eligibility checklist](SPACE-APPS-2026-SUBMISSION.md)
 - [Crop Rotation Explorer: documented demo, NASA rainfall provenance and limitations](ROTATION-EXPLORER.md)
 - [Data sources, third-party credits, media rights and AI disclosure audit](CREDITS-AND-SOURCES.md)
+- [29-asset visual/video/PDF rights and origin register](audit/ASSET-PROVENANCE-REGISTER.csv)
+- [Media rights review and urgent fixes](audit/MEDIA-AND-SUBMISSION-REVIEW.md)
+- [Open blocker: resolve SI media, NASA logo and watermark evidence](https://github.com/ameer-marwan/AgriPulse/issues/6)
+- [Ready-to-copy NASA submission source fields](audit/SPACE-APPS-FORM-LINKS.md)
 
 **Transparency:** the repository includes development from before the 14 November 2026 hackathon start. Confirm eligibility and any reuse rules with organizers. Connected NASA POWER historical data and NASA GIBS visual map layers must not be described as validated field-level irrigation predictions; see the checklists above.
 

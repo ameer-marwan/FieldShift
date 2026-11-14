@@ -1,3 +1,5 @@
+// AI-use metadata: rotation pathway regression tests added with OpenAI ChatGPT
+// assistance on 14 Nov 2026; GitHub Actions verified the Node test suite.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
