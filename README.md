@@ -74,6 +74,13 @@ AgriPulse was built by a student technology team exploring how NASA Earth data c
 - 🛰️ **Ameer** — [GitHub](https://github.com/ameer-marwan)
 - 🔧 **Mostafa** — [GitHub](https://github.com/mostafabass1)
 
+## 🧾 NASA Space Apps 2026 submission readiness
+
+- [Submission, public-demo verification and eligibility checklist](SPACE-APPS-2026-SUBMISSION.md)
+- [Data sources, third-party credits, media rights and AI disclosure audit](CREDITS-AND-SOURCES.md)
+
+**Transparency:** the repository includes development from before the 14 November 2026 hackathon start. Confirm eligibility and any reuse rules with organizers. Connected NASA POWER historical data and NASA GIBS visual map layers must not be described as validated field-level irrigation predictions; see the checklists above.
+
 ## 🛠️ Run locally
 
 Requires **Node.js 22.13+**.
