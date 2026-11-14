@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-label="Illustrative stormy sky — SI-generated conceptual illustration, not observational imagery">
+<title>Illustrative stormy sky | SI-generated conceptual visual</title>
+<defs>
+<linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#243E61"/><stop offset=".83" stop-color="#7D92A3"/></linearGradient>
+<radialGradient id="sun" cx=".75" cy=".3"><stop offset="0" stop-color="#FFF9DD" stop-opacity=".82"/><stop offset="1" stop-color="#FFF9DD" stop-opacity="0"/></radialGradient>
+<linearGradient id="earthShine" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#DDF5FF" stop-opacity=".45"/><stop offset=".6" stop-color="#0074B5" stop-opacity="0"/><stop offset="1" stop-color="#05243B" stop-opacity=".5"/></linearGradient>
+</defs>
+<rect width="1600" height="900" fill="url(#sky)"/>
+<rect width="1600" height="900" fill="url(#sun)"/>
+<circle cx="1240" cy="200" r="83" fill="#F7E9B4" fill-opacity=".7"/>
+<g fill="#B9C9D5" opacity=".45"><ellipse cx="410" cy="270" rx="300" ry="90"/><ellipse cx="1150" cy="330" rx="390" ry="100"/></g><path d="M840 325L730 520L840 505L765 690L1000 435L860 450L960 330Z" fill="#F6E4A4"/><path d="M0 655Q460 510 980 650T1600 580V900H0Z" fill="#1E4251"/><path d="M0 780Q420 665 950 740T1600 700V900H0Z" fill="#234850"/>
+<rect x="42" y="810" width="700" height="54" rx="12" fill="#061720" fill-opacity=".76"/>
+<text x="63" y="844" fill="#E9F9ED" font-size="24" font-family="Arial,sans-serif" font-weight="700" letter-spacing="1">SI-GENERATED VISUAL · ILLUSTRATION</text>
+</svg>
