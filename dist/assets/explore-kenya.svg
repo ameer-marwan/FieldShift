@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-label="Solar irrigation systems in Kenya — SI-generated conceptual illustration, not observational imagery">
+<title>Solar irrigation systems in Kenya | SI-generated conceptual visual</title>
+<defs>
+<linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7CCDEB"/><stop offset=".83" stop-color="#F5D5A8"/></linearGradient>
+<radialGradient id="sun" cx=".75" cy=".3"><stop offset="0" stop-color="#FFF9DD" stop-opacity=".82"/><stop offset="1" stop-color="#FFF9DD" stop-opacity="0"/></radialGradient>
+<linearGradient id="earthShine" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#DDF5FF" stop-opacity=".45"/><stop offset=".6" stop-color="#0074B5" stop-opacity="0"/><stop offset="1" stop-color="#05243B" stop-opacity=".5"/></linearGradient>
+</defs>
+<rect width="1600" height="900" fill="url(#sky)"/>
+<rect width="1600" height="900" fill="url(#sun)"/>
+<circle cx="1240" cy="200" r="83" fill="#F7E9B4" fill-opacity=".7"/>
+<path d="M0 665Q500 560 840 630T1600 600V900H0Z" fill="#9F8656"/><path d="M0 735Q500 660 1000 720T1600 680V900H0Z" fill="#5D9D57"/><g transform="translate(850 410)"><path d="M80 195L100 70H440L420 195Z" fill="#163C66" stroke="#A4D1EE" stroke-width="14"/><path d="M100 70L420 195M280 70L280 195M140 130H440" stroke="#71A2D2" stroke-width="9"/><path d="M260 190V320" stroke="#163C66" stroke-width="22"/></g><g stroke="#9DDAAC" stroke-width="8" fill="none"><path d="M-80 870Q20 760 90 700"/><path d="M170 870Q270 760 340 700"/><path d="M420 870Q520 760 590 700"/><path d="M670 870Q770 760 840 700"/><path d="M920 870Q1020 760 1090 700"/><path d="M1170 870Q1270 760 1340 700"/><path d="M1420 870Q1520 760 1590 700"/><path d="M1670 870Q1770 760 1840 700"/></g>
+<rect x="42" y="810" width="700" height="54" rx="12" fill="#061720" fill-opacity=".76"/>
+<text x="63" y="844" fill="#E9F9ED" font-size="24" font-family="Arial,sans-serif" font-weight="700" letter-spacing="1">SI-GENERATED VISUAL · ILLUSTRATION</text>
+</svg>

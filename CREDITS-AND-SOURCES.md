@@ -1,10 +1,16 @@
 # AgriPulse — verified sources, rights register and SI disclosure
 **NASA Space Apps Challenge 2026 • Evidence audit: 14 November 2026**
 
-> **Status: PARTIALLY DOCUMENTED — MEDIA RIGHTS AND SI WATERMARKS ARE NOT CLEARED.**
+> **Status: PARTIALLY REMEDIATED — 16 original SI-watermarked illustrations have replaced uncertain media. Three retained identity-logo assets still require provenance/permission checks, and NASA submission attachment status must be verified.**
 > This file records what can be checked against the public repository, and separately flags facts that require the creators' proof. It is not legal advice, a project eligibility ruling, a certification of live deployment, or evidence that NASA has approved the project.
 
 See the complete **29-file** [asset-by-asset inventory](audit/ASSET-PROVENANCE-REGISTER.csv) (each path, size and Git blob SHA) and [review checklist](audit/MEDIA-AND-SUBMISSION-REVIEW.md).
+
+## 0. Current media remediation
+
+**After the 14 November compliance branch:** We replaced all unverified farm and weather photos in the running website with [16 new, visibly SI-watermarked SVG conceptual illustrations](audit/VISUAL-REPLACEMENTS.md), and removed 26 uncertain-origin photos/videos/PDF files from the current HEAD. The outdated 8-page concept deck and thumbnail with NASA insignia are no longer promoted or distributed from the latest tree. Historical versions remain in prior commits to preserve the provenance record.
+
+**Still open:** team ownership and SI origin of `dist/assets/logo-new.png`/`logo.svg`, permission for the Dunia Al-Ajial school emblem, actual final judging deck uploaded to NASA, and the live Vercel deployment revision. Do not claim these have been independently certified.
 
 ## 1. Real data integrations, as observed in source code
 
@@ -47,9 +53,9 @@ Landsat (https://landsat.gsfc.nasa.gov/data/), ECOSTRESS (https://ecostress.jpl.
 
 ## 3. Photos, logos, illustrations, animations and PDFs
 
-There are **29 media assets** in `dist/assets/` and `media/` as of the audited Git tree. [The full inventory](audit/ASSET-PROVENANCE-REGISTER.csv) contains each file's immutable Git blob SHA. In most cases there is **no source URL, author, generation-tool record or license grant in the repository**. Do not describe these as “cleared” or “AI-generated” solely from their appearance.
+The **baseline inventory contained 29 media assets** (see [CSV](audit/ASSET-PROVENANCE-REGISTER.csv)). In the current tree, **26 of those older assets have been removed** and replaced in runtime by **16 original SVG illustrations** with visible SI-generated watermarks. Three retained team/school logo assets still need rights and origin confirmation. [The full inventory](audit/ASSET-PROVENANCE-REGISTER.csv) contains each file's immutable Git blob SHA. In most cases there is **no source URL, author, generation-tool record or license grant in the repository**. Do not describe these as “cleared” or “AI-generated” solely from their appearance.
 
-**Specific findings:**
+**Specific findings (historical, prior to 14 November replacement commit):**
 
 1. `dist/assets/intro-earth.jpg` visually resembles the Apollo 17 **Blue Marble** photograph AS17-148-22727. Candidate official original and credit: https://science.nasa.gov/resource/the-blue-marble/ — **NASA Johnson Space Center**. The exact binary lineage/edition must still be verified.
 2. `media/agripulse-introduction-thumbnail.jpeg` **visibly contains a NASA insignia embedded in composite artwork**. The designer and generation method are **unknown**. NASA GO Team specifically prohibits NASA branding in SI-generated content. If created with SI, replace the NASA badge with a non-NASA graphic in a new asset. Do not assume crediting it makes it permissible.

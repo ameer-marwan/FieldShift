@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-label="Illustrative forest landscape — SI-generated conceptual illustration, not observational imagery">
+<title>Illustrative forest landscape | SI-generated conceptual visual</title>
+<defs>
+<linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#A4DDDA"/><stop offset=".83" stop-color="#E6F3CF"/></linearGradient>
+<radialGradient id="sun" cx=".75" cy=".3"><stop offset="0" stop-color="#FFF9DD" stop-opacity=".82"/><stop offset="1" stop-color="#FFF9DD" stop-opacity="0"/></radialGradient>
+<linearGradient id="earthShine" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#DDF5FF" stop-opacity=".45"/><stop offset=".6" stop-color="#0074B5" stop-opacity="0"/><stop offset="1" stop-color="#05243B" stop-opacity=".5"/></linearGradient>
+</defs>
+<rect width="1600" height="900" fill="url(#sky)"/>
+<rect width="1600" height="900" fill="url(#sun)"/>
+<circle cx="1240" cy="200" r="83" fill="#F7E9B4" fill-opacity=".7"/>
+<path d="M0 650Q300 510 700 610T1600 540V900H0Z" fill="#2B6D4C"/><path d="M0 780Q500 620 960 730T1600 650V900H0Z" fill="#4E9A61"/><g><path d="M0 750l-42 0 42-160 42 160Z" fill="#2B6D4C"/><path d="M90 777l-42 0 42-160 42 160Z" fill="#235339"/><path d="M180 804l-42 0 42-160 42 160Z" fill="#2B6D4C"/><path d="M270 831l-42 0 42-160 42 160Z" fill="#235339"/><path d="M360 750l-42 0 42-160 42 160Z" fill="#2B6D4C"/><path d="M450 777l-42 0 42-160 42 160Z" fill="#235339"/><path d="M540 804l-42 0 42-160 42 160Z" fill="#2B6D4C"/><path d="M630 831l-42 0 42-160 42 160Z" fill="#235339"/><path d="M720 750l-42 0 42-160 42 160Z" fill="#2B6D4C"/><path d="M810 777l-42 0 42-160 42 160Z" fill="#235339"/><path d="M900 804l-42 0 42-160 42 160Z" fill="#2B6D4C"/><path d="M990 831l-42 0 42-160 42 160Z" fill="#235339"/><path d="M1080 750l-42 0 42-160 42 160Z" fill="#2B6D4C"/><path d="M1170 777l-42 0 42-160 42 160Z" fill="#235339"/><path d="M1260 804l-42 0 42-160 42 160Z" fill="#2B6D4C"/><path d="M1350 831l-42 0 42-160 42 160Z" fill="#235339"/><path d="M1440 750l-42 0 42-160 42 160Z" fill="#2B6D4C"/><path d="M1530 777l-42 0 42-160 42 160Z" fill="#235339"/><path d="M1620 804l-42 0 42-160 42 160Z" fill="#2B6D4C"/><path d="M1710 831l-42 0 42-160 42 160Z" fill="#235339"/></g>
+<rect x="42" y="810" width="700" height="54" rx="12" fill="#061720" fill-opacity=".76"/>
+<text x="63" y="844" fill="#E9F9ED" font-size="24" font-family="Arial,sans-serif" font-weight="700" letter-spacing="1">SI-GENERATED VISUAL · ILLUSTRATION</text>
+</svg>

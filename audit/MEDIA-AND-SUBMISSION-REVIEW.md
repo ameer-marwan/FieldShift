@@ -1,9 +1,11 @@
 # Space Apps 2026 — media rights and submission evidence review
 **Dunia Al-Ajial Devs / AgriPulse • 14 November 2026**
 
-## Outcome: NOT fully cleared
+## Outcome: high-risk source-unverified raster content removed from HEAD; three identity assets still unresolved
 
 The code/source-data documentation is substantially stronger, but the media copyright chain and NASA SI watermark compliance **cannot be certified** solely by examining GitHub assets. The team must confirm provenance and complete the actions below.
+
+**Remediation update:** The 5 Explore images and 11 backgrounds have been replaced by 16 visible “SI-GENERATED VISUAL · ILLUSTRATION” SVG artworks, and 26 former images/videos/old PDFs plus one stale release HTML have been removed from the current Git tree. Their historic findings below remain in this report as the rationale for deletion; **they no longer describe current served files**. See [current visuals report](VISUAL-REPLACEMENTS.md). The two logos and school emblem are still awaiting rights confirmation.
 
 ## Evidence actually reviewed
 

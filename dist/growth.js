@@ -32,7 +32,7 @@ export function createPlantGrowth(canvas, scene) {
     if(t>3.9){context.save();context.globalAlpha=smooth(3.9,4.3,t)*fade;context.drawImage(layers.original,0,0,width,height);context.restore();}
     canvas.dataset.growth=String(Math.min(stem,left,right));
   }
-  const ready=context?Promise.all([load('assets/intro-plant.jpg'),load('assets/intro-soil.jpg')]).then(([plant,soil])=>{
+  const ready=context?Promise.all([load('assets/intro-plant.svg'),load('assets/intro-soil.svg')]).then(([plant,soil])=>{
     if(disposed)return false;
     width=canvas.width=1280;height=canvas.height=Math.round(width*plant.naturalHeight/plant.naturalWidth);
     const photo=document.createElement('canvas');photo.width=width;photo.height=height;
