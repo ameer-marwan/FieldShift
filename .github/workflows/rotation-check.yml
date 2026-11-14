@@ -1,0 +1,26 @@
+name: Verify AgriPulse rotation explorer
+on:
+  pull_request:
+    paths:
+      - 'dist/**'
+      - 'tests/**'
+      - 'scripts/**'
+      - 'package.json'
+      - '.github/workflows/rotation-check.yml'
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax checks
+        run: npm run check
+      - name: Test suite
+        run: npm test
+      - name: Build portable deployable site
+        run: npm run build
