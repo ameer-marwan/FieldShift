@@ -160,26 +160,103 @@ export async function fetchNasa(point, { signal } = {}) {
   return value;
 }
 
-const fao = 'https://gaez.fao.org/';
-export const crops = [
-  ['wheat','Wheat','grain'], ['maize','Maize','grain'], ['sorghum','Sorghum','grain'],
-  ['barley','Barley','grain'], ['soybean','Soybean','legume'], ['chickpea','Chickpea','legume'],
-  ['cowpea','Cowpea','legume'], ['sunflower','Sunflower','oilseed'],
-  ['rye','Cereal rye cover','cover'], ['clover','Clover cover','cover']
-].map(([id,name,type]) => ({ id, name, type, family: 'Validate locally', season: 'Validate with FAO GAEZ',
-  waterDemand: 'Not loaded', droughtTolerance: 'Not loaded', phMin: null, phMax: null,
-  notes: 'AgriPulse does not assign crop suitability until an approved FAO GAEZ layer and local field evidence are available.',
-  reference: fao, evidence: 'FAO GAEZ validation resource; no suitability value has been inferred' }));
 
-export function recommendRotations({ priority = 'soil', currentCrop = 'wheat', irrigated = false, ph = null, waterBudget = null, weather = null } = {}) {
-  const concepts = [
-    { id: 'soil', name: 'Soil protection' }, { id: 'water', name: 'Water conservation' }, { id: 'risk', name: 'Crop diversification' }
+/**
+ * Exploratory crop-family pathways based on USDA-NRCS crop-rotation principles.
+ * These are NOT validated crop recommendations: no FAO GAEZ suitability,
+ * planting-calendar, irrigation requirement, or yield model is connected.
+ * NASA POWER rainfall, when loaded, is descriptive historical evidence.
+ */
+const rotationGuidance = 'https://www.nrcs.usda.gov/conservation-basics/soil/soil-health/soil-health-on-cropland';
+const cropDefinitions = [
+  ['wheat','Wheat','grain','Poaceae'],
+  ['maize','Maize','grain','Poaceae'],
+  ['sorghum','Sorghum','grain','Poaceae'],
+  ['barley','Barley','grain','Poaceae'],
+  ['soybean','Soybean','legume','Fabaceae'],
+  ['chickpea','Chickpea','legume','Fabaceae'],
+  ['cowpea','Cowpea','legume','Fabaceae'],
+  ['sunflower','Sunflower','oilseed','Asteraceae'],
+  ['rye','Cereal rye cover','cover','Poaceae'],
+  ['clover','Clover cover','cover','Fabaceae']
+];
+export const crops = cropDefinitions.map(([id, name, type, family]) => ({
+  id, name, type, family,
+  season: 'Local planting calendar required',
+  waterDemand: 'Not evaluated', droughtTolerance: 'Not evaluated',
+  phMin: null, phMax: null,
+  notes: 'Crop family and general rotation role are known; local soil, water, season and variety suitability are NOT assessed.',
+  reference: rotationGuidance,
+  evidence: 'USDA-NRCS general crop rotation guidance; not a field-specific suitability rating'
+}));
+
+/** Ignore incomplete NASA months; never turn missing rainfall into a zero. */
+function historicalRainfallContext(nasa) {
+  if (!nasa || !Array.isArray(nasa.months)) return null;
+  const months = nasa.months.filter(m => Number.isInteger(m.month) && m.month >= 1 && m.month <= 12 &&
+    typeof m.rain === 'number' && Number.isFinite(m.rain) && m.rain >= 0);
+  const unique = new Map(months.map(m => [m.month, m.rain]));
+  const entries = [...unique.entries()];
+  if (!entries.length) return { year: nasa.year, complete: false, availableMonths: 0, text: 'NASA POWER rainfall records are unavailable for this location.' };
+  if (unique.size !== 12) return {
+    year: nasa.year, complete: false, availableMonths: unique.size,
+    text: 'NASA POWER ' + nasa.year + ' rainfall is incomplete (' + unique.size + '/12 months); no annual rainfall total is inferred.'
+  };
+  const total = entries.reduce((sum, [, rain]) => sum + rain, 0);
+  const zeroMonths = entries.filter(([, rain]) => rain === 0).length;
+  return { year: nasa.year, complete: true, availableMonths: 12, annualRainfallMm: total,
+    zeroMonths, source: 'NASA POWER Daily API (historical regional grid)',
+    text: 'NASA POWER ' + nasa.year + ': ' + total.toFixed(1) + ' mm historical annual rainfall; ' +
+      zeroMonths + ' month(s) recorded zero rainfall. This describes one past year, not future irrigation needs.' };
+}
+
+export function recommendRotations({
+  priority = 'soil', currentCrop = 'wheat', irrigated = false,
+  ph = null, waterBudget = null, weather = null, nasa = null
+} = {}) {
+  const current = crops.find(c => c.id === currentCrop) || crops[0];
+  const family = current.family;
+  // Candidate sequences are for comparing trade-offs, NOT planting instructions.
+  // Consecutive stages change plant families; all crops still require local checks.
+  const profiles = [
+    { id: 'soil', name: 'Soil-cover & diversity pathway',
+      sequence: family === 'Fabaceae' ? ['barley','chickpea'] : ['chickpea','barley'],
+      purpose: 'Alternates grass and legume families to explore diversity and soil health principles.' },
+    { id: 'water', name: 'Water-awareness pathway',
+      sequence: family === 'Poaceae' ? ['clover','rye'] : ['rye','clover'],
+      purpose: 'Explores a cover-crop stage while requiring an explicit water-availability check; water savings are NOT calculated.' },
+    { id: 'risk', name: 'Diversification pathway',
+      sequence: family === 'Asteraceae' ? ['cowpea','sorghum'] : family === 'Fabaceae' ? ['sunflower','barley'] : ['sunflower','cowpea'],
+      purpose: 'Explores additional crop families to reduce reliance on a repeating single-family sequence.' }
   ];
-  return concepts.sort((a, b) => (a.id === priority ? -1 : b.id === priority ? 1 : 0)).map(concept => ({
-    id: concept.id, name: concept.name, sequence: [],
-    reasons: ['No crop sequence is generated without approved FAO GAEZ suitability evidence and farmer-entered local soil, water, and crop-history records.'],
-    limitations: ['Open FAO GAEZ and validate the selected crops with local agricultural expertise before creating a rotation.'],
-    waterLabel: 'Evidence required', sourceUrl: fao, evidence: 'No inferred suitability values'
+  const rain = historicalRainfallContext(nasa);
+  const nasaNote = rain ? rain.text : 'NASA POWER historical rainfall not loaded for this field. Load the climate context in Reports before assessing seasonal water risks.';
+  const waterNote = irrigated ?
+    'Farmer reports irrigation access. Verify its actual volume, reliability and scheduling; this app does not compute crop-specific water needs.' :
+    'Farmer reports rainfed conditions. Verify seasonal rainfall and crop-stage water needs locally; no rainfed suitability is inferred.';
+  const phNote = typeof ph === 'number' && Number.isFinite(ph) && ph >= 0 && ph <= 14 ?
+    'Farmer-entered soil pH: ' + ph.toFixed(1) + '. Crop-specific pH tolerances have not been connected or checked.' :
+    'Soil pH evidence is missing or invalid. Obtain a dated local soil test before choosing a crop.';
+  const budgetNote = typeof waterBudget === 'number' && Number.isFinite(waterBudget) && waterBudget >= 0 ?
+    'A water budget was supplied, but crop-specific demand is not modeled; do not infer that any pathway fits the budget.' : null;
+  return profiles.sort((a, b) => Number(b.id === priority) - Number(a.id === priority)).map(profile => ({
+    id: profile.id, name: profile.name, sequence: profile.sequence,
+    reasons: [
+      profile.purpose,
+      nasaNote,
+      waterNote,
+      phNote,
+      ...(budgetNote ? [budgetNote] : [])
+    ],
+    limitations: [
+      'Illustrative crop-family sequence only — planting dates, regional crop suitability, pests, yields and irrigation demand are NOT validated.',
+      'Review with a local agronomist and approved crop/soil evidence before any field decision.'
+    ],
+    waterLabel: 'Unquantified; needs local evidence',
+    sourceUrl: rotationGuidance,
+    evidence: 'Exploratory pathway; NASA POWER historical context + USDA-NRCS rotation principles; no inferred crop suitability',
+    readiness: 'Requires local validation',
+    nasaContext: rain
   }));
 }
 
