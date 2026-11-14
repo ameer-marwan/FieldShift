@@ -1,4 +1,4 @@
-/** Produce a portable single-file edition from the exact modular website. */
+/** Produce a portable single-file edition from the current modular website. */
 import {readFile,writeFile,mkdir} from 'node:fs/promises';
 import {resolve,dirname} from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -10,19 +10,23 @@ const dataUri=async(path,type)=>'data:'+type+';base64,'+(await readFile(resolve(
 const scriptSafe=s=>s.replace(/<\/script/gi,'<\\/script');
 let html=await read('dist/index.html');
 const logo=await dataUri('dist/assets/logo-new.png','image/png');
-const landscape=await dataUri('dist/assets/field-landscape.jpg','image/jpeg');
-const introFarmland=await dataUri('dist/assets/intro-farmland.jpg','image/jpeg');
-const introSpace=await dataUri('dist/assets/intro-space.jpg','image/jpeg');
 let css=(await Promise.all(['dist/vendor/maplibre-gl.css','dist/styles.css','dist/planning.css','dist/scenes.css','dist/i18n.css','dist/intro.css','dist/intro-real.css','dist/accounts.css','dist/field-controls.css','dist/polish.css'].map(read))).join('\n');
-css=css.replaceAll("url('assets/field-landscape.jpg')",'url("'+landscape+'")');
-css=css.replaceAll("url('assets/intro-farmland.jpg')",'url("'+introFarmland+'")');
-css=css.replaceAll("url('assets/intro-space.jpg')",'url("'+introSpace+'")');
-for (const name of ['sea','forest','sky-clear','sky-clouds','sky-storm']) {
-  const asset = await dataUri('dist/assets/'+name+'.jpg','image/jpeg');
-  css = css.replace(new RegExp('url\\([\'\"]?assets/'+name+'\\.jpg[\'\"]?\\)','g'),()=> 'url("'+asset+'")');
+// Only original, visibly SI-watermarked SVG illustrations are packaged as field scenes.
+// The previous unverified JPG/WEBP landscape assets are no longer served or bundled.
+const illustrationNames=[
+  'explore-china','explore-ksa','explore-netherlands','explore-kenya','explore-brazil',
+  'field-landscape','intro-farmland','intro-plant','intro-soil','intro-space',
+  'earth-texture','forest','sea','sky-clear','sky-clouds','sky-storm'
+];
+const inlinedArt = new Map();
+for (const name of illustrationNames) {
+  inlinedArt.set(name,await dataUri('dist/assets/'+name+'.svg','image/svg+xml'));
 }
-css=css.replaceAll("url('assets/intro-plant.jpg')",'url("'+await dataUri('dist/assets/intro-plant.jpg','image/jpeg')+'")');
-html=html.replace(/<link rel="stylesheet" href="[^"]+"\s*\/?>/g,'').replace('</head>',()=>'<style>'+css.replace(/<\/style/gi,'<\\/style')+'</style></head>');
+for (const [name,data] of inlinedArt) {
+  css=css.replaceAll("assets/"+name+".svg",data);
+}
+html=html.replace(/<link rel="stylesheet" href="[^"]+"\s*\/?>/g,'')
+  .replace('</head>',()=>'<style>'+css.replace(/<\/style/gi,'<\\/style')+'</style></head>');
 html=html.replaceAll('assets/logo-new.png',logo);
 html=html.replaceAll('assets/dunia-alajial-logo.jpg',await dataUri('dist/assets/dunia-alajial-logo.jpg','image/jpeg'));
 let js='(async()=>{\nconst __fieldshiftModules = {};\n';
@@ -42,17 +46,18 @@ js+=app+'\n})().catch(error=>{console.error(error);document.body.classList.remov
 const vendor=await read('dist/vendor/maplibre-gl.js');
 html=html.replace('<script src="vendor/maplibre-gl.js"></script>',()=>'<script>'+scriptSafe(vendor)+'</script>');
 html=html.replace('<script type="module" src="app.js"></script>',()=>'<script>'+scriptSafe(js)+'</script>');
-// Dynamic intro markup is part of the injected bundle, so embed its logo after script assembly too.
+// Runtime-created intro and explorer markup is embedded in the JS string.
 html=html.replaceAll('assets/logo-new.png',logo);
-html=html.replaceAll('assets/earth-texture.jpg',await dataUri('dist/assets/earth-texture.jpg','image/jpeg'));
-html=html.replaceAll('assets/intro-plant.jpg',await dataUri('dist/assets/intro-plant.jpg','image/jpeg'));
-html=html.replaceAll('assets/intro-soil.jpg',await dataUri('dist/assets/intro-soil.jpg','image/jpeg'));
-for (const name of ['china','ksa','netherlands','kenya','brazil']) {
-  html=html.replaceAll('assets/explore-'+name+'.webp',await dataUri('dist/assets/explore-'+name+'.webp','image/webp'));
+for (const [name,data] of inlinedArt) {
+  html=html.replaceAll('assets/'+name+'.svg',data);
 }
-if(html.includes('assets/logo-new.png'))throw Error('Portable build contains an unresolved FieldShift logo URL');
+if(html.includes('assets/logo-new.png')||/assets\/[\w-]+\.(?:webp|jpg|png|svg)/i.test(html) &&
+   !html.includes('assets/dunia-alajial-logo.jpg') && !html.includes('assets/logo-new.png')) {
+  // Keep the build independent from local scene files; any remaining references should be investigated.
+  const missing=[...new Set(html.match(/assets\/[\w-]+\.(?:webp|jpg|png|svg)/gi)||[])];
+  if (missing.length) throw Error('Portable build contains unresolved assets: '+missing.join(', '));
+}
 const target=resolve(out,'FieldShift-Final.html');
 await writeFile(target,html);
-// Vercel serves this entrypoint when the portable release is deployed.
 await writeFile(resolve(out,'index.html'),html);
 console.log('Portable website: '+target+' ('+Buffer.byteLength(html).toLocaleString()+' bytes)');
