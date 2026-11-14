@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-label="Greenhouse agriculture in the Netherlands — SI-generated conceptual illustration, not observational imagery">
+<title>Greenhouse agriculture in the Netherlands | SI-generated conceptual visual</title>
+<defs>
+<linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#90C6F5"/><stop offset=".83" stop-color="#F9EBC5"/></linearGradient>
+<radialGradient id="sun" cx=".75" cy=".3"><stop offset="0" stop-color="#FFF9DD" stop-opacity=".82"/><stop offset="1" stop-color="#FFF9DD" stop-opacity="0"/></radialGradient>
+<linearGradient id="earthShine" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#DDF5FF" stop-opacity=".45"/><stop offset=".6" stop-color="#0074B5" stop-opacity="0"/><stop offset="1" stop-color="#05243B" stop-opacity=".5"/></linearGradient>
+</defs>
+<rect width="1600" height="900" fill="url(#sky)"/>
+<rect width="1600" height="900" fill="url(#sun)"/>
+<circle cx="1240" cy="200" r="83" fill="#F7E9B4" fill-opacity=".7"/>
+<path d="M0 680Q400 590 850 675T1600 630V900H0Z" fill="#5C946E"/><path d="M0 745Q360 650 850 745T1600 700V900H0Z" fill="#88BC63"/><g stroke="#E6FAF4" stroke-opacity=".85" stroke-width="10" fill="#E7F7F0" fill-opacity=".26"><path d="M280 635L485 355H1200L1410 635Z"/><path d="M480 355V635M720 355V635M960 355V635M1200 355V635"/><path d="M280 635H1410"/></g><g fill="#2A7957"><ellipse cx="340" cy="670" rx="24" ry="38"/><ellipse cx="404" cy="670" rx="24" ry="38"/><ellipse cx="468" cy="670" rx="24" ry="38"/><ellipse cx="532" cy="670" rx="24" ry="38"/><ellipse cx="596" cy="670" rx="24" ry="38"/><ellipse cx="660" cy="670" rx="24" ry="38"/><ellipse cx="724" cy="670" rx="24" ry="38"/><ellipse cx="788" cy="670" rx="24" ry="38"/><ellipse cx="852" cy="670" rx="24" ry="38"/><ellipse cx="916" cy="670" rx="24" ry="38"/><ellipse cx="980" cy="670" rx="24" ry="38"/><ellipse cx="1044" cy="670" rx="24" ry="38"/><ellipse cx="1108" cy="670" rx="24" ry="38"/><ellipse cx="1172" cy="670" rx="24" ry="38"/><ellipse cx="1236" cy="670" rx="24" ry="38"/><ellipse cx="1300" cy="670" rx="24" ry="38"/></g>
+<rect x="42" y="810" width="700" height="54" rx="12" fill="#061720" fill-opacity=".76"/>
+<text x="63" y="844" fill="#E9F9ED" font-size="24" font-family="Arial,sans-serif" font-weight="700" letter-spacing="1">SI-GENERATED VISUAL · ILLUSTRATION</text>
+</svg>
