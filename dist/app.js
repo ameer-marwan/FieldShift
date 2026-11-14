@@ -108,6 +108,10 @@ const validPoint = (loc) =>
   Math.abs(loc.lat) <= 90 &&
   Math.abs(loc.lon) <= 180;
 const savedLocation = read("fieldshift.location", null);
+const defaultSimpleFarm = {
+  objective: 'water', waterSource: 'unknown', crop: 'recommend', crops: [], soilPH: '',
+  soilTexture: 'unknown', drainage: 'unknown', localYield: '', localPrice: '', localCost: '',
+};
 const defaultEconomics = {
   currency: "USD",
   areaHa: null,
@@ -199,7 +203,7 @@ const state = {
   ready: false,
   fieldSettings: read("fieldshift.fieldSettings", {}),
   economicsInputs: { ...defaultEconomics },
-  simpleFarm: { objective: "water", waterSource: "unknown", crop: "recommend", crops: [], soilPH: "", soilTexture: "unknown", drainage: "unknown", localYield: "", localPrice: "", localCost: "", ...read("fieldshift.simpleFarm", {}) },
+  simpleFarm: { ...defaultSimpleFarm, ...read("fieldshift.simpleFarm", {}) },
 };
 // Reviewed Simple-mode crop records adapted from the FieldShift AI reference repository.
 // They deliberately produce factor labels, never a numeric score or planting instruction.
@@ -270,6 +274,20 @@ const dateShort = (date) =>
 const today = () => new Date().toISOString().slice(0, 10);
 const fieldKey = () =>
   state.location.lat.toFixed(5) + "," + state.location.lon.toFixed(5);
+
+function restoreSimpleFarm(previousKey) {
+  if (previousKey === fieldKey()) return;
+  if (previousKey) state.fieldSettings[previousKey] = {
+    ...state.fieldSettings[previousKey], simpleFarm: { ...state.simpleFarm },
+  };
+  const stored = state.fieldSettings[fieldKey()]?.simpleFarm;
+  state.simpleFarm = {
+    ...defaultSimpleFarm, currency: countryCurrencies[state.location.country] || 'USD', ...stored,
+  };
+  state.simpleFx = null;
+  write('fieldshift.fieldSettings', state.fieldSettings);
+  write('fieldshift.simpleFarm', state.simpleFarm);
+}
 const total = (days, key) =>
   days.length && days.every((d) => number(d[key]))
     ? days.reduce((n, d) => n + d[key], 0)
@@ -486,6 +504,7 @@ function init() {
         false,
       ),
     onBoundary: (boundary) => {
+      const previousKey = hasLocation() ? fieldKey() : null;
       state.location.boundary = boundary?.geometry ?? null;
       if (boundary) {
         // The reference point is a vertex-average center, not a polygon-wide environmental average.
@@ -495,8 +514,10 @@ function init() {
         state.location.id = crypto.randomUUID();
         state.location.name =
           $("#field-name-input").value.trim() || "Mapped field";
+        restoreSimpleFarm(previousKey);
         clearNasa();
         restoreFieldSettings();
+        renderSimpleFlow();
         loadWeather();
         addJournal(
           "Field boundary drawn",
@@ -773,6 +794,13 @@ function navigate() {
 
 function setSimpleStep(step) {
   const safeStep = Math.max(1, Math.min(4, Number(step) || 1));
+  const farmForm = $('#simple-farm-form');
+  if (farmForm) {
+    if (safeStep !== 2) delete farmForm.dataset.returnToReport;
+    farmForm.querySelector('button[type="submit"]').textContent = t(
+      farmForm.dataset.returnToReport ? 'Save and update report' : 'Save & continue',
+    );
+  }
   $$('.simple-stage').forEach(stage => { stage.hidden = Number(stage.dataset.simpleStage) !== safeStep; });
   $$('[data-simple-step]').forEach(button => {
     const number = Number(button.dataset.simpleStep);
@@ -930,24 +958,21 @@ async function updateSimpleCurrency() {
   return state.simpleFx;
 }
 
-function simpleFactorStatus(value, requirement, kind = 'number') {
-  if (value === '' || value === null || value === undefined || value === 'unknown') return 'UNKNOWN';
-  if (kind === 'number') {
-    const numeric = Number(value);
-    if (!Number.isFinite(numeric)) return 'UNKNOWN';
-    if (numeric >= requirement.optimum[0] && numeric <= requirement.optimum[1]) return 'SUITABLE';
-    if (numeric >= requirement.absolute[0] && numeric <= requirement.absolute[1]) return 'MARGINAL';
-    return 'LIMITING';
-  }
-  if (requirement.optimum.includes(value)) return 'SUITABLE';
-  if (requirement.absolute.includes(value)) return 'MARGINAL';
-  return 'LIMITING';
-}
+const simpleSoilTextures = { light: 'Light-textured soil', medium: 'Medium-textured soil', heavy: 'Heavy-textured soil', organic: 'Organic soil' };
+const simpleDrainageTypes = { well: 'Well drained', excessive: 'Very fast drainage', poor: 'Poor drainage', moderate: 'Moderate drainage' };
+const simpleEconomicInputs = {
+  localYield: 'Expected yield (t/ha)',
+  localPrice: 'Selling price per tonne',
+  localCost: 'Cost per hectare',
+};
 
-function assessSimpleCropEvidence(cropId) {
-  const profile = simpleCropEvidence[cropId];
-  if (!profile) return null;
-  return { profile, factors: [], limiting: [], unknown: ['FAO GAEZ suitability layer', 'local soil evidence'], overall: 'validation required' };
+function simpleNumericInput(value, max = Infinity) {
+  if (value == null) return null;
+  const digits = '٠١٢٣٤٥٦٧٨٩۰۱۲۳۴۵۶۷۸۹';
+  const input = String(value).trim().replace(/[٠-٩۰-۹]/g, digit => String(digits.indexOf(digit) % 10)).replace('٫', '.');
+  if (!/^\d+(?:\.\d*)?$|^\.\d+$/.test(input)) return null;
+  const numeric = Number(input);
+  return Number.isFinite(numeric) && numeric <= max ? numeric : null;
 }
 
 function renderSimpleResults() {
@@ -955,6 +980,9 @@ function renderSimpleResults() {
   const reportHero = $('#simple-report-hero');
   const summary = $('#simple-results-summary');
   if (!host || !summary || !reportHero) return;
+  const evidenceOpen = $('.simple-report-evidence', reportHero)?.open;
+  const seasonOpen = $('.simple-report-season', reportHero)?.open;
+  const weatherRetryFocused = document.activeElement?.dataset.action === 'simple-retry-weather';
   if (!hasLocation()) {
     summary.textContent = t('Choose your farm location first. No estimates have been generated.');
     reportHero.innerHTML = '';
@@ -962,7 +990,8 @@ function renderSimpleResults() {
     return;
   }
 
-  const { location, farm, weather, cropAssessment, economics, evidence, nextActions } = buildSimpleReportPayload();
+  const payload = buildSimpleReportPayload();
+  const { language, location, farm, weather, economics, evidence, decisions } = payload;
   const e = escapeHTML;
   const locale = localeForLanguage();
   const period = reportPeriod(weather, locale);
@@ -973,27 +1002,64 @@ function renderSimpleResults() {
   const scene = weatherCode >= 51 ? 'storm' : weatherCode === 0 ? 'clear' : 'clouds';
   const glyph = weatherCode >= 51 ? '☂' : weatherCode === 0 ? '☀' : number(weatherCode) ? '☁' : '◎';
   const days = live ? weather.daily.slice(0, 4) : weather.daily.slice(-4);
-  const weatherDays = days.map(day => '<div><span>' + e(dateShort(day.date)) + '</span><b>' + e(temp(day.highC)) +
-    '</b><small>' + e(rain(day.rainMm)) + '</small></div>').join('');
+  const measure = (value, unit, precision) => reportMeasure(value, unit, precision, language);
+  const weatherDays = days.map(day => '<div><span>' + e(dateShort(day.date)) + '</span><b>' + e(measure(day.highC, '°C')) +
+    '</b><small>' + e(measure(day.rainMm, 'mm', 1)) + '</small></div>').join('');
   const margin = economics.available ? simpleMoney(economics.planningMarginPerHa, economics.currency) : '—';
   const source = weather.source || t('Not available');
   const retrieved = weather.retrievedAt ? new Date(weather.retrievedAt).toLocaleString(locale) : t('Not available');
-  const soilKnown = [farm.soilPH, state.simpleFarm.soilTexture, state.simpleFarm.drainage].filter(value => value && value !== 'unknown').length;
   const fact = (label, value, detail) => '<article><span>' + e(t(label)) + '</span><b>' + e(value) + '</b><small>' + e(detail) + '</small></article>';
   const detail = (label, value) => '<div><dt>' + e(t(label)) + '</dt><dd>' + e(value) + '</dd></div>';
   const shown = value => value ?? t('Not available');
-  const rainText = number(weather.sevenDay.rainMm) ? rain(weather.sevenDay.rainMm) : t('Not available');
-  const et0Text = number(weather.sevenDay.referenceEt0Mm) ? rain(weather.sevenDay.referenceEt0Mm) : t('Not available');
-  reportHero.innerHTML = `<article class="simple-weather-report simple-weather-${scene}">
+  const rainText = measure(weather.sevenDay.rainMm, 'mm', 1);
+  const et0Text = measure(weather.sevenDay.referenceEt0Mm, 'mm', 1);
+  const season = payload.season;
+  const seasonLabel = season ? new Intl.NumberFormat(locale, { useGrouping: false }).format(season.year) : '';
+  const monthFormat = new Intl.DateTimeFormat(locale, { month: 'short', timeZone: 'UTC', calendar: 'gregory' });
+  const updateButtons = {
+    water: farm.waterSourceProvided ? '' : '<button class="button secondary" type="button" data-action="simple-edit-report" data-field="waterSource">' + e(t('Add water source')) + '</button>',
+    crop: farm.missingSoilKeys.length ? '<button class="button secondary" type="button" data-action="simple-edit-report" data-field="' + farm.missingSoilKeys[0] + '">' + e(t('Complete soil details')) + '</button>' : '',
+    weather: live ? '' : '<button class="button secondary" type="button" data-action="simple-retry-weather">' + e(t('Refresh forecast')) + '</button>',
+    economics: '<button class="button secondary" type="button" data-action="simple-edit-report" data-field="' + (economics.missingKeys[0] || 'localYield') + '">' + e(t(economics.available ? 'Edit cost and sales inputs' : 'Add cost and sales inputs')) + '</button>',
+  };
+  reportHero.innerHTML = `<section class="simple-decision-brief" aria-labelledby="simple-decision-heading">
+    <h3 id="simple-decision-heading" tabindex="-1">${e(t('Your decision brief'))}</h3>
+    <div class="simple-decision-grid">${decisions.map(decision => `<article>
+      <h4>${e(decision.title)}</h4><strong>${e(decision.action)}</strong>
+      <p>${e(decision.reason)}</p>${decision.benchmark ? '<p>' + e(decision.benchmark) + '</p>' : ''}
+      ${decision.followUp ? '<p>' + e(decision.followUp) + '</p>' : ''}
+      ${decision.sourceUrl ? '<a href="' + e(decision.sourceUrl) + '">' + e(t('General potato growing guide')) + '</a>' : ''}
+      ${decision.needed ? '<p class="simple-decision-needed">' + e(t('Still needed')) + ' · ' + e(decision.needed) + '</p>' : ''}
+      ${updateButtons[decision.id]}
+    </article>`).join('')}</div>
+  </section>
+  <details class="simple-report-season"${seasonOpen ? ' open' : ''}>
+    <summary>${e(t('Previous-year rainfall from NASA POWER'))}${seasonLabel ? ' · <bdi>' + e(seasonLabel) + '</bdi>' : ''}</summary>
+    <p>${e(t('Use one past year to compare wetter and drier months locally. It cannot establish a planting date.'))}</p>
+    ${season ? `<p><strong>${e(t('Months with complete rainfall data'))}</strong> · <bdi dir="ltr">${e(
+      new Intl.NumberFormat(locale).format(season.availableMonths) + ' / ' + new Intl.NumberFormat(locale).format(12),
+    )}</bdi></p>
+    <p>${e(season.annualRainMm === null ? t('Annual rainfall is unavailable because some months are incomplete.')
+      : t('Historical annual rainfall') + ' · ' + measure(season.annualRainMm, 'mm', 1))}</p>
+    <dl class="simple-months">${season.months.map(month => detail(
+      monthFormat.format(new Date(Date.UTC(season.year, month.month - 1, 1))), measure(month.rain, 'mm', 1),
+    )).join('')}</dl>
+    <a href="${e(season.sourceUrl)}">${e(t('Data source details'))}</a>`
+      : '<button type="button" class="button secondary" data-action="simple-load-season">' + e(t('Load last year’s rainfall')) + '</button>'}
+    <p data-simple-season-status role="status" tabindex="-1"></p>
+  </details>
+  <details class="simple-report-evidence">
+    <summary>${e(t('See data and sources'))}</summary>
+    <article class="simple-weather-report simple-weather-${scene}">
     <div class="simple-weather-shade"></div>
     <div class="simple-weather-main">
       <span class="eyebrow">${e(t(live ? 'CURRENT MODEL FORECAST' : historical ? 'RECENT NASA POWER HISTORY' : 'WEATHER UNAVAILABLE'))}</span>
       <h2>${e(location.name)}</h2>
       <p>${e(farm.crops.join(', ') || t('No crop selected'))}</p>
-      <div class="simple-weather-current"><span aria-hidden="true">${glyph}</span><strong>${e(temp(current?.temperatureC))}</strong>
+      <div class="simple-weather-current"><span aria-hidden="true">${glyph}</span><strong>${e(measure(current?.temperatureC, '°C', 1))}</strong>
         <div><b>${e(live ? t('Current modeled conditions') : weather.classification)}</b>
           <small>${e(source)}${period ? ' · ' + e(period) : ''}</small>
-          <small>${current ? e(t('Wind') + ' ' + wind(current.windKmh) + ' · ' + t('Humidity') + ' ' + reportMeasure(current.humidityPercent, '%')) : ''}</small></div>
+          <small>${current ? e(t('Wind') + ' ' + measure(current.windKmh, 'km/h') + ' · ' + t('Humidity') + ' ' + measure(current.humidityPercent, '%')) : ''}</small></div>
       </div>
     </div>
     <div class="simple-weather-forecast">
@@ -1007,62 +1073,38 @@ function renderSimpleResults() {
     ${fact('Field details', farm.waterSource, farm.priority)}
     ${fact('Profit estimate', margin, economics.available ? t('Farmer-entered local values') : t('Local values required'))}
   </div>
-  <section class="simple-report-readiness">
-    <div><span class="eyebrow">${e(t('DECISION READINESS'))}</span><b>${e(evidence.connectedSignals + ' / ' + evidence.totalSignals + ' ' + t('signals connected'))}</b></div>
-    <div>${evidence.signals.map(({ label, connected }) => '<span class="' + (connected ? 'connected' : '') + '"><i></i>' + e(label) + '</span>').join('')}</div>
-  </section>
   <section class="simple-report-depth">
     <article><span class="eyebrow">${e(t('Water context'))}</span><h3>${e(source)}</h3><dl>
-      ${detail('7-day rain', rainText)}${detail('7-day reference ET₀', et0Text)}${detail('Classification', weather.classification)}
-    </dl><small class="estimate-note">${e(evidence.limitations[0])}</small></article>
-    <article><span class="eyebrow">${e(t('SOIL CONTEXT'))}</span><h3>${e(soilKnown + ' / 3 ' + t('details provided'))}</h3><dl>
-      ${detail('Soil pH', shown(farm.soilPH))}${detail('Texture', farm.soilTexture)}${detail('Drainage', farm.drainage)}
+      ${detail(historical ? 'Historical 7-day rain' : '7-day rain', rainText)}${detail('7-day reference ET₀', et0Text)}${detail('Classification', weather.classification)}
+    </dl><small class="estimate-note">${e(evidence.limitations[0])} ${e(t('Reference ET₀ describes atmospheric water demand. It does not specify how much to irrigate.'))}</small></article>
+    <article><span class="eyebrow">${e(t('SOIL CONTEXT'))}</span><h3>${e(t('Farmer-entered field details'))}</h3><dl>
+      ${detail('Soil pH', measure(simpleNumericInput(farm.soilPH), '', 2))}${detail('Texture', farm.soilTexture)}${detail('Drainage', farm.drainage)}
     </dl></article>
     <article><span class="eyebrow">${e(t('REPORT TRACE'))}</span><h3>${e(t('Weather evidence'))}</h3><dl>
       ${detail('Data period', shown(period))}${detail('Retrieved at', retrieved)}
-      ${detail('Coordinates', location.latitude.toFixed(3) + ', ' + location.longitude.toFixed(3))}
-    </dl></article>
+      ${detail('Latitude', measure(location.latitude, '', 3))}${detail('Longitude', measure(location.longitude, '', 3))}
+    </dl>${weather.sourceUrl ? '<a href="' + e(weather.sourceUrl) + '">' + e(t('Data source details')) + '</a>' : ''}</article>
   </section>
-  <article class="simple-decision-brief">
-    <div><span class="eyebrow">${e(t('NEXT BEST ACTIONS'))}</span><h3>${e(t('Your decision brief'))}</h3></div>
-    <ol>${nextActions.map(tip => '<li>' + e(tip) + '</li>').join('')}</ol>
-  </article>`;
-  summary.textContent = t('Report ready for') + ' ' + location.name + ' · ' + t('Currency') + ': ' + economics.currency + '.';
-  const cropBody = cropAssessment.length
-    ? cropAssessment.map(item => item.crop + ': ' + item.overall + '.').join(' ')
-    : t('Choose a crop to evaluate the available profile factors.');
-  const profitBody = economics.available
-    ? t('Planning margin') + ': ' + margin + ' ' + t('per hectare') + '. ' +
-      t('Estimated sales') + ': ' + simpleMoney(economics.estimatedSalesPerHa, economics.currency) + '. ' +
-      t('Planning costs') + ': ' + simpleMoney(economics.planningCostsPerHa, economics.currency) + '.'
-    : t('Enter local yield, price, and cost to calculate profit.');
-  const hot = number(current?.temperatureC) && current.temperatureC >= 35;
-  const windy = number(current?.windKmh) && current.windKmh >= 30;
-  const riskBody = number(current?.temperatureC) && number(current?.windKmh)
-    ? (hot || windy ? t('Condition watch') + ': ' + [hot ? t('high temperature') : '', windy ? t('strong wind') : ''].filter(Boolean).join(' · ')
-      : t('No heat or wind threshold is crossed in the available model. Check current local conditions.'))
-    : t('Temperature or wind data is unavailable.');
-  host.innerHTML = [
-    simpleCard('Crop profiles', 'screening', cropBody, t('Profile screening only; confirm with local evidence.')),
-    simpleCard('Water context', number(weather.sevenDay.rainMm) ? 'screening' : 'unavailable', t('7-day rain') + ': ' + rainText, evidence.limitations[1]),
-    simpleCard('Planting window', 'unavailable', t('A local planting window needs seasonal crop and climate evidence.'), t('Review historical climate in Complex farmer mode.')),
-    simpleCard('Profit planning estimate', economics.available ? 'calculated' : 'unavailable', profitBody, economics.source),
-    simpleCard('Farm risks', weather.available ? 'screening' : 'unavailable', riskBody, evidence.limitations[0]),
-  ].join('');
+  </details>`;
+  const currency = document.createElement('bdi');
+  currency.textContent = economics.currency;
+  summary.replaceChildren(t('Report ready for') + ' ' + location.name + ' · ' + t('Currency') + ' ', currency);
+  host.replaceChildren();
+  if (evidenceOpen) $('.simple-report-evidence', reportHero).open = true;
+  if (weatherRetryFocused) ($('#simple-report-hero [data-action="simple-retry-weather"]') || $('#simple-decision-heading')).focus({ preventScroll: true });
 }
 
 function simpleReportData() {
   const farm = state.simpleFarm;
   const cropIds = (farm.crops?.length ? farm.crops : [farm.crop]).filter(id => id && id !== 'recommend');
   const cropNames = cropIds.map(id => simpleCropEvidence[id]?.name || crops.find(crop => crop.id === id)?.name || id);
-  const values = [farm.localYield, farm.localPrice, farm.localCost];
-  const [yieldTonnes, price, cost] = values.map(Number);
-  const benchmark = values.every(value => value != null && String(value).trim() !== '') &&
-    [yieldTonnes, price, cost].every(value => number(value) && value >= 0)
-    ? { yield: yieldTonnes, price, cost } : null;
-  const fx = state.simpleFx || { currency: simpleCurrency() };
+  const values = Object.keys(simpleEconomicInputs).map(key => [key, simpleNumericInput(farm[key])]);
+  const [yieldTonnes, price, cost] = values.map(([, value]) => value);
+  const missingKeys = values.filter(([, value]) => value === null).map(([key]) => key);
+  const benchmark = missingKeys.length ? null : { yield: yieldTonnes, price, cost };
+  const fx = { currency: simpleCurrency() };
   const margin = benchmark ? benchmark.yield * benchmark.price - benchmark.cost : null;
-  return { cropIds, cropNames, benchmark, fx, margin };
+  return { cropIds, cropNames, benchmark, fx, margin, missingKeys, yieldTonnes, price, cost };
 }
 
 const reportLocales = { en:'en-US',fr:'fr-FR',ar:'ar-SA',es:'es-ES',de:'de-DE',pt:'pt-BR',tr:'tr-TR',ur:'ur-PK',hi:'hi-IN',zh:'zh-CN' };
@@ -1081,8 +1123,8 @@ function simpleReportWeather(weather, tr) {
   const referenceEt0Mm = fullWeek ? total(daily, 'referenceEt0Mm') : null;
   const current = weather?.current;
   return {
-    available: Boolean(weather), kind, period, daily,
-    source: weather?.source ?? null,
+    available: Boolean(weather), kind, period, daily, fullWeek,
+    source: isForecast ? tr('Open-Meteo forecast') : weather?.source ? tr(weather.source) : null,
     sourceUrl: weather?.sourceUrl ?? null,
     classification: tr(isForecast ? 'Model forecast' : weather ? 'Historical regional record' : 'Not available'),
     retrievedAt: weather?.retrievedAt ?? null,
@@ -1100,17 +1142,117 @@ function simpleReportWeather(weather, tr) {
 
 function buildSimpleReportPayload(language = currentLanguage()) {
   const tr = value => tFor(language, value);
-  const { cropIds, cropNames, benchmark, fx, margin } = simpleReportData();
+  const fill = (message, values) => tr(message).replace(/\{(\w+)\}/g, (_, name) => values[name]);
+  const formatList = values => new Intl.ListFormat(reportLocales[language] || 'en-US').format(values.map(tr));
+  const measure = (value, unit, precision) => reportMeasure(value, unit, precision, language);
+  const { cropIds, cropNames, benchmark, fx, margin, missingKeys, yieldTonnes, price, cost } = simpleReportData();
   const farm = state.simpleFarm;
   const weather = simpleReportWeather(state.weather, tr);
-  const hasSoil = [farm.soilPH, farm.soilTexture, farm.drainage].some(value => value && value !== 'unknown');
-  const waterAction = weather.kind === 'forecast' && number(weather.sevenDay.rainMm)
-    ? 'Compare expected rainfall over the next seven days with local soil moisture and irrigation access.'
-    : weather.kind === 'historical' ? 'Use the historical record as context and check a current local forecast before irrigating.'
-    : 'Check local rainfall and soil moisture before planting or irrigating.';
+  const locale = reportLocales[language] || 'en-US';
+  const dateFormat = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', timeZone: 'UTC', calendar: 'gregory' });
+  const dayLabel = date => dateFormat.format(new Date(date + 'T12:00:00Z'));
+  const soil = {
+    soilPH: simpleNumericInput(farm.soilPH, 14),
+    soilTexture: simpleSoilTextures[farm.soilTexture] ?? null,
+    drainage: simpleDrainageTypes[farm.drainage] ?? null,
+  };
+  const soilLabels = { soilPH: 'Soil pH', soilTexture: 'Texture', drainage: 'Drainage' };
+  const missingSoilKeys = Object.keys(soil).filter(key => soil[key] === null);
+  const waterSourceProvided = ['rainfed', 'irrigated'].includes(farm.waterSource);
+  const rainfall = weather.sevenDay.rainMm;
+  const hasForecastRain = weather.kind === 'forecast' && number(rainfall);
+  const dryForecast = hasForecastRain && rainfall === 0;
+  const breakEvenPrice = yieldTonnes > 0 && cost !== null ? cost / yieldTonnes : null;
+  const breakEvenYield = price > 0 && cost !== null ? cost / price : null;
+  const extremeDays = weather.kind === 'forecast'
+    ? weather.daily.filter(day => day.highC >= 35 || day.windMaxKmh >= 30) : [];
+  const completeWeatherWatch = weather.fullWeek && weather.daily.every(day => number(day.highC) && number(day.windMaxKmh));
+  const seasonMonths = state.nasa?.months.map(({ month, rain }) => ({ month, rain }));
+  const season = seasonMonths ? {
+    year: state.nasa.year, source: state.nasa.source, sourceUrl: state.nasa.sourceUrl, retrievedAt: state.nasa.retrievedAt,
+    months: seasonMonths, availableMonths: seasonMonths.filter(month => number(month.rain)).length,
+    annualRainMm: seasonMonths.length === 12 ? total(seasonMonths, 'rain') : null,
+  } : null;
+  const forecastSource = tr('Open-Meteo forecast');
+  const decisions = [
+    {
+      id: 'water', title: tr('Water this week'),
+      action: tr(dryForecast && farm.waterSource === 'rainfed'
+        ? 'Check soil moisture before committing to planting this week.'
+        : hasForecastRain && farm.waterSource === 'irrigated'
+          ? 'Check root-zone moisture and confirm the next irrigation is available.'
+          : hasForecastRain && farm.waterSource === 'rainfed' ? 'Check how much rain reaches the root zone before committing to planting.'
+          : hasForecastRain ? 'Check root-zone moisture and confirm where water will come from.'
+            : 'Get a current local forecast and check soil moisture before planning irrigation.'),
+      reason: hasForecastRain ? fill('{source} expects {rain} of rain over seven days ({period}).', {
+        source: forecastSource, rain: measure(rainfall, 'mm', 1), period: reportPeriod(weather, locale),
+      }) : tr(weather.kind === 'historical'
+        ? 'The available rain figures are past NASA POWER records.'
+        : 'A complete seven-day rainfall forecast is unavailable.'),
+      needed: tr(waterSourceProvided
+        ? 'Root-zone moisture and the crop growth stage to estimate irrigation needs.'
+        : 'The water source, root-zone moisture and the crop growth stage.'),
+    },
+    {
+      id: 'crop', title: cropNames.length ? fill('Planting decision for {crops}', { crops: formatList(cropNames) }) : tr('Planting decision'),
+      action: tr(missingSoilKeys.length
+        ? 'Complete the missing soil details and check the local planting calendar before choosing a crop.'
+        : 'Compare these field details with a trusted local planting calendar and crop requirements.'),
+      reason: soil.drainage ? fill('Reported drainage: {drainage}. Confirm it in the field after rain or irrigation.', { drainage: tr(soil.drainage).toLocaleLowerCase(locale) })
+        : tr('Check whether water collects in the field after rain or irrigation and record the drainage.'),
+      followUp: cropIds.includes('potato')
+        ? tr('For potatoes, check for standing water and bring a recent soil test when reviewing the variety with local extension.')
+        : tr('A planting date and field suitability require local evidence for the selected crop and variety.'),
+      sourceUrl: cropIds.includes('potato') ? 'https://extension.umn.edu/garden-and-home/yard-and-garden/gardening-in-minnesota/growing-potatoes' : null,
+      needed: formatList([...missingSoilKeys.map(key => key === 'soilPH' ? 'Soil pH from a dated local test' : soilLabels[key]), 'Local planting window for the crop and variety']),
+    },
+    {
+      id: 'weather', title: tr('Heat and wind this week'),
+      action: tr(extremeDays.length
+        ? 'Check the local forecast on the flagged days before scheduling field operations.'
+        : weather.kind === 'forecast' && completeWeatherWatch
+          ? 'Recheck the local forecast before scheduling weather-sensitive field operations.'
+          : 'Verify the latest daily heat and wind forecast before scheduling field operations.'),
+      reason: extremeDays.length
+        ? fill('{source} flags {days}. Checks use daily highs of 35 °C or daily maximum wind of 30 km/h and above.', {
+          source: forecastSource,
+          days: formatList(extremeDays.map(day => {
+            const readings = [];
+            if (day.highC >= 35) readings.push(measure(day.highC, '°C'));
+            if (day.windMaxKmh >= 30) readings.push(measure(day.windMaxKmh, 'km/h'));
+            return dayLabel(day.date) + ' (' + readings.join(' · ') + ')';
+          })),
+        })
+        : tr(weather.kind === 'forecast' && completeWeatherWatch
+          ? 'The seven-day model stays below 35 °C and 30 km/h. Crop-specific thresholds may differ.'
+          : weather.kind === 'forecast' ? 'Daily heat or wind data is incomplete for the next seven days.'
+            : 'A current daily heat and wind forecast is unavailable.'),
+      needed: !completeWeatherWatch ? tr('A complete daily heat and wind forecast for all seven days.') : null,
+    },
+    {
+      id: 'economics', title: tr('Will sales cover costs?'),
+      action: tr(benchmark
+        ? margin < 0 ? 'Review costs or confirm a better buyer price before committing.'
+          : 'Confirm the buyer price, saleable yield and full costs before committing.'
+        : 'Add the missing local inputs to calculate your margin.'),
+      reason: benchmark ? fill(margin < 0 ? 'Using your figures, costs exceed sales by {money} per hectare.'
+        : 'Using your figures, the estimated margin is {money} per hectare.', {
+        money: reportMoney(Math.abs(margin), fx.currency, language),
+      }) : tr('Margin per hectare equals expected yield × selling price minus cost per hectare.'),
+      needed: missingKeys.length ? formatList(missingKeys.map(key => simpleEconomicInputs[key])) : null,
+      benchmark: number(breakEvenPrice) ? fill('Break-even selling price: {money} per tonne.', {
+        money: reportMoney(breakEvenPrice, fx.currency, language),
+      }) : number(breakEvenYield) ? fill('Break-even yield: {yield} tonnes per hectare.', {
+        yield: measure(breakEvenYield, '', 2),
+      }) : null,
+    },
+  ];
+  const priority = farm.objective === 'soil' ? 'crop' : farm.objective === 'risk' ? 'weather' : 'water';
+  const first = decisions.findIndex(decision => decision.id === priority);
+  decisions.unshift(...decisions.splice(first, 1));
   const signals = [
     ['Location', true], ['Weather context', weather.available], ['Crop choice', cropNames.length > 0],
-    ['Local soil input', hasSoil], ['Local economics', Boolean(benchmark)],
+    ['Local soil input', missingSoilKeys.length === 0], ['Local economics', Boolean(benchmark)],
   ];
   return {
     schemaVersion: 3,
@@ -1118,27 +1260,34 @@ function buildSimpleReportPayload(language = currentLanguage()) {
     direction: ['ar', 'ur'].includes(language) ? 'rtl' : 'ltr',
     generatedAt: new Date().toISOString(),
     location: {
-      name: state.location.name, country: state.location.country, region: state.location.region,
+      name: state.location.method === 'Device location' && state.location.name === 'My current location'
+        ? tr('My current location') : state.location.name,
+      country: state.location.country, region: state.location.region,
       latitude: state.location.lat, longitude: state.location.lon, method: state.location.method,
     },
     farm: {
       crops: cropNames.map(tr),
       waterSource: tr(farm.waterSource === 'irrigated' ? 'Irrigation available' : farm.waterSource === 'rainfed' ? 'Rain-fed only' : 'Water source unknown'),
       priority: tr({ water: 'Use water wisely', soil: 'Protect soil health', risk: 'Prepare for changing weather' }[farm.objective] ?? 'Not provided'),
-      soilPH: farm.soilPH || null,
-      soilTexture: tr(farm.soilTexture === 'unknown' ? 'Not provided' : farm.soilTexture),
-      drainage: tr(farm.drainage === 'unknown' ? 'Not provided' : farm.drainage),
+      waterSourceProvided, missingSoilKeys,
+      soilPH: soil.soilPH === null ? null : String(soil.soilPH),
+      soilTexture: tr(soil.soilTexture || 'Not provided'),
+      drainage: tr(soil.drainage || 'Not provided'),
     },
     weather,
-    cropAssessment: cropIds.map(assessSimpleCropEvidence).filter(Boolean).map(item => ({
-      crop: tr(item.profile.name), overall: tr(item.overall), limiting: item.limiting.map(tr),
-      unknown: item.unknown.map(tr), factors: item.factors.map(([name, status]) => ({ name: tr(name), status: tr(status) })),
+    season,
+    cropAssessment: cropIds.map((id, index) => ({
+      crop: tr(cropNames[index] || id), overall: tr('Field suitability not assessed'), limiting: [], factors: [],
+      unknown: [...missingSoilKeys.map(key => soilLabels[key]), 'Local planting window for the crop and variety'].map(tr),
     })),
     economics: {
       available: Boolean(benchmark), currency: fx.currency, source: tr('Farmer-entered local values'),
-      expectedYieldTonnesPerHa: benchmark?.yield ?? null, sellingPricePerTonne: benchmark?.price ?? null,
+      missingKeys,
+      expectedYieldTonnesPerHa: yieldTonnes, sellingPricePerTonne: price,
       estimatedSalesPerHa: benchmark ? benchmark.yield * benchmark.price : null,
-      planningCostsPerHa: benchmark?.cost ?? null, planningMarginPerHa: margin,
+      planningCostsPerHa: cost, planningMarginPerHa: margin,
+      breakEvenPricePerTonne: number(breakEvenPrice) ? breakEvenPrice : null,
+      breakEvenYieldTonnesPerHa: number(breakEvenYield) ? breakEvenYield : null,
     },
     evidence: {
       signals: signals.map(([label, connected]) => ({ label: tr(label), connected })),
@@ -1149,46 +1298,52 @@ function buildSimpleReportPayload(language = currentLanguage()) {
           : weather.available ? 'Weather is modeled for the selected point, not measured on the farm.'
           : 'Weather context is unavailable until a provider responds.',
         'Seven-day totals require seven consecutive daily values.',
-        'Crop suitability is a profile screening, not a planting prescription.',
+        'Reference ET₀ describes atmospheric water demand. It does not specify how much to irrigate.',
+        'Crop and planting dates require locally verified evidence.',
       ].map(tr),
     },
-    nextActions: [
-      farm.soilPH ? 'Keep your soil sample date and method with this report.' : 'Add a dated local soil test before comparing crop fit.',
-      waterAction,
-      benchmark ? 'Confirm selling price and input costs with a local buyer before acting.' : 'Enter local yield, price, and cost to calculate profit.',
-    ].map(tr),
+    decisions,
+    nextActions: decisions.map(decision => decision.action),
   };
 }
 
 function reportPeriod(weather, locale) {
   if (!weather.period) return null;
-  const format = new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeZone: 'UTC' });
+  const format = new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeZone: 'UTC', calendar: 'gregory' });
   const { start, end } = weather.period;
   return format.formatRange(new Date(start + 'T12:00:00Z'), new Date(end + 'T12:00:00Z'));
 }
-function reportMoney(value, currency, language) {
-  return number(value) ? new Intl.NumberFormat(reportLocales[language] || 'en-US', { style: 'currency', currency, maximumFractionDigits: 0 }).format(value) : '—';
+function reportMoney(value, currency, language, maximumFractionDigits = 2) {
+  return number(value) ? new Intl.NumberFormat(reportLocales[language] || 'en-US', { style: 'currency', currency, maximumFractionDigits }).format(value) : '—';
 }
-function reportMeasure(value, unit, precision = 0) {
-  return number(value) ? value.toFixed(precision) + ' ' + unit : '—';
+function reportMeasure(value, unit, precision = 0, language = currentLanguage()) {
+  if (!number(value)) return tFor(language, 'Not available');
+  const formatted = new Intl.NumberFormat(reportLocales[language] || 'en-US', { maximumFractionDigits: precision }).format(value);
+  return [formatted, tFor(language, unit)].filter(Boolean).join(' ');
 }
 
 function buildSimpleReportHtml(payload) {
-  const { language, direction, location, farm, weather, economics, cropAssessment, evidence, nextActions } = payload;
+  const { language, direction, location, farm, weather, economics, cropAssessment, evidence, decisions, season } = payload;
   const tr = value => tFor(language, value);
   const e = escapeHTML;
   const locale = reportLocales[language] || 'en-US';
   const period = reportPeriod(weather, locale);
   const retrieved = weather.retrievedAt ? new Date(weather.retrievedAt).toLocaleString(locale) : null;
   const missing = tr('Not available');
+  const dateFormat = new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeZone: 'UTC', calendar: 'gregory' });
+  const monthFormat = new Intl.DateTimeFormat(locale, { month: 'short', timeZone: 'UTC', calendar: 'gregory' });
   const isolate = value => '<bdi>' + e(value) + '</bdi>';
   const metric = (label, value) => '<div class="metric"><small>' + e(tr(label)) + '</small><strong>' + isolate(value === '—' ? missing : value) + '</strong></div>';
   const detail = (label, value) => '<div><dt>' + e(tr(label)) + '</dt><dd>' + isolate(value ?? missing) + '</dd></div>';
+  const measure = (value, unit, precision) => reportMeasure(value, unit, precision, language);
   const rows = weather.daily.map(day => [
-    day.date, reportMeasure(day.highC, '°C'), reportMeasure(day.lowC, '°C'),
-    reportMeasure(day.rainMm, 'mm', 1), reportMeasure(day.referenceEt0Mm, 'mm', 1), reportMeasure(day.windMaxKmh, 'km/h'),
+    dateFormat.format(new Date(day.date + 'T12:00:00Z')),
+    measure(day.highC, '°C'), measure(day.lowC, '°C'),
+    measure(day.rainMm, 'mm', 1), measure(day.rainProbabilityPercent, '%'),
+    measure(day.referenceEt0Mm, 'mm', 1), measure(day.windMaxKmh, 'km/h'),
   ].map(value => '<td>' + isolate(value) + '</td>').join('')).map(row => '<tr>' + row + '</tr>').join('');
-  const headers = ['Date', 'High', 'Low', 'Rain', 'Reference ET₀', 'Wind'].map(label => '<th scope="col">' + e(tr(label)) + '</th>').join('');
+  const headers = ['Date', 'High', 'Low', 'Rain', 'Chance of rain', 'Reference ET₀', 'Daily maximum wind']
+    .map(label => '<th scope="col">' + e(tr(label)) + '</th>').join('');
   const cropRows = cropAssessment.map(item => '<li><b>' + e(item.crop) + '</b> · ' + e(item.overall) +
     (item.unknown.length ? '<small>' + e(tr('Evidence still needed')) + ' · ' + e(item.unknown.join(', ')) + '</small>' : '') + '</li>').join('');
   const money = value => reportMoney(value, economics.currency, language);
@@ -1212,12 +1367,17 @@ a{color:#245f3b}footer{font-size:12px}bdi{unicode-bidi:isolate}
 @media print{body{background:white;font-size:11px}main{max-width:none;padding:0}header{background:white;color:#173d34;border:1px solid #cadac8;padding:12px}header small{color:#506b5e}h1{font-size:26px}h2{font-size:14px}.metric,.card,.actions{padding:8px 10px;break-inside:avoid}section{margin:8px 0}.metrics,.grid{gap:6px}th,td{padding:3px 5px}}
 </style></head><body><main>
 <header><small>AGRIPULSE · ${e(tr('FARM DECISION REPORT'))}</small><h1>${e(location.name)}</h1>
-<p>${e(location.country || tr('Selected region'))} · <bdi>${e(location.latitude.toFixed(4) + ', ' + location.longitude.toFixed(4))}</bdi> · ${e(new Date(payload.generatedAt).toLocaleDateString(locale))}</p></header>
-<section class="actions"><h2>${e(tr('Your decision brief'))}</h2><ol>${nextActions.map(action => '<li>' + e(action) + '</li>').join('')}</ol></section>
+<p>${e(location.country || tr('Selected region'))} · <bdi dir="ltr">${e(location.latitude.toFixed(4) + ', ' + location.longitude.toFixed(4))}</bdi> · ${e(dateFormat.format(new Date(payload.generatedAt)))}</p></header>
+<section class="actions"><h2>${e(tr('Your decision brief'))}</h2><ol>${decisions.map(decision =>
+  '<li><strong>' + e(decision.title) + '</strong><p>' + e(decision.action) + '</p><p>' + e(decision.reason) + '</p>' +
+  (decision.benchmark ? '<p>' + e(decision.benchmark) + '</p>' : '') +
+  (decision.followUp ? '<p>' + e(decision.followUp) + '</p>' : '') +
+  (decision.sourceUrl ? '<p><a href="' + e(decision.sourceUrl) + '">' + e(tr('General potato growing guide')) + '</a></p>' : '') +
+  (decision.needed ? '<p>' + e(tr('Still needed')) + ' · ' + e(decision.needed) + '</p>' : '') + '</li>').join('')}</ol></section>
 <section class="metrics">
-${metric(weather.kind === 'historical' ? 'Latest recorded temperature' : 'Temperature', reportMeasure(weather.current?.temperatureC, '°C'))}
-${metric('7-day rain', reportMeasure(weather.sevenDay.rainMm, 'mm', 1))}
-${metric('7-day reference ET₀', reportMeasure(weather.sevenDay.referenceEt0Mm, 'mm', 1))}
+${metric(weather.kind === 'historical' ? 'Latest recorded temperature' : 'Temperature', measure(weather.current?.temperatureC, '°C'))}
+${metric(weather.kind === 'historical' ? 'Historical 7-day rain' : '7-day rain', measure(weather.sevenDay.rainMm, 'mm', 1))}
+${metric('7-day reference ET₀', measure(weather.sevenDay.referenceEt0Mm, 'mm', 1))}
 ${metric('Planning margin per hectare', money(economics.planningMarginPerHa))}
 </section>
 <section class="grid">
@@ -1227,25 +1387,35 @@ ${detail('Retrieved at', retrieved)}</dl>
 ${weather.sourceUrl ? '<p><a href="' + e(weather.sourceUrl) + '">' + e(tr('Data source details')) + '</a></p>' : ''}
 </article>
 <article class="card"><h2>${e(tr('Field details'))}</h2><dl>
-${detail('Water source', farm.waterSource)}${detail('Your priority', farm.priority)}${detail('Soil pH', farm.soilPH)}
+${detail('Water source', farm.waterSource)}${detail('Your priority', farm.priority)}${detail('Soil pH', measure(simpleNumericInput(farm.soilPH), '', 2))}
 ${detail('Texture', farm.soilTexture)}${detail('Drainage', farm.drainage)}</dl></article>
 <article class="card"><h2>${e(tr('Crop profiles'))}</h2>
 ${cropRows ? '<ul class="crop-list">' + cropRows + '</ul>' : '<p>' + e(tr('No crop selected')) + '</p>'}</article>
 <article class="card"><h2>${e(tr('Economics'))}</h2><p>${e(economics.available ? economics.source : tr('Local values required'))}</p><dl>
-${detail('Expected yield (t/ha)', economics.expectedYieldTonnesPerHa)}
+${detail('Expected yield (t/ha)', measure(economics.expectedYieldTonnesPerHa, '', 2))}
 ${detail('Selling price per tonne', money(economics.sellingPricePerTonne))}
 ${detail('Estimated sales per hectare', money(economics.estimatedSalesPerHa))}
-${detail('Cost per hectare', money(economics.planningCostsPerHa))}</dl></article>
+${detail('Cost per hectare', money(economics.planningCostsPerHa))}
+${detail('Break-even selling price per tonne', money(economics.breakEvenPricePerTonne))}
+${detail('Break-even yield (t/ha)', measure(economics.breakEvenYieldTonnesPerHa, '', 2))}</dl></article>
 </section>
 <section class="card"><h2>${e(heading)}</h2>
 ${rows ? '<div class="table-wrap"><table><thead><tr>' + headers + '</tr></thead><tbody>' + rows + '</tbody></table></div>' : '<p>' + e(missing) + '</p>'}</section>
+${season ? `<section class="card"><h2>${e(tr('Previous-year rainfall from NASA POWER'))} · <bdi>${e(
+  new Intl.NumberFormat(locale, { useGrouping: false }).format(season.year),
+)}</bdi></h2><p>${e(tr('Use one past year to compare wetter and drier months locally. It cannot establish a planting date.'))}</p>
+<p>${e(season.annualRainMm === null ? tr('Annual rainfall is unavailable because some months are incomplete.')
+  : tr('Historical annual rainfall') + ' · ' + measure(season.annualRainMm, 'mm', 1))}</p>
+<dl>${season.months.map(({ month, rain }) => detail(
+  monthFormat.format(new Date(Date.UTC(season.year, month - 1, 1))), measure(rain, 'mm', 1),
+)).join('')}</dl><p><a href="${e(season.sourceUrl)}">${e(tr('Data source details'))}</a></p></section>` : ''}
 <section class="card"><h2>${e(tr('Evidence and limitations'))}</h2><ul class="limitations">${evidence.limitations.map(note => '<li>' + e(note) + '</li>').join('')}</ul></section>
 <footer>AgriPulse · ${e(tr('Generated from your selected land and inputs.'))}</footer>
 </main></body></html>`;
 }
 
 function buildSimpleReportCsv(payload) {
-  const { location, farm, weather, economics, nextActions } = payload;
+  const { location, farm, weather, economics, decisions, season } = payload;
   const tr = value => tFor(payload.language, value);
   const rows = [
     [tr('AgriPulse farm decision report')], [tr('Location'), location.name], [tr('Country'), location.country],
@@ -1253,10 +1423,19 @@ function buildSimpleReportCsv(payload) {
     [tr('Weather source'), weather.source], [tr('Classification'), weather.classification], [tr('Data source details'), weather.sourceUrl],
     [tr('Data period'), weather.period?.start, weather.period?.end], [tr('Retrieved at'), weather.retrievedAt],
     [tr('Currency'), economics.currency], [tr('Planning margin per hectare'), economics.planningMarginPerHa],
-    [tr('7-day rain'), weather.sevenDay.rainMm], [tr('7-day reference ET₀'), weather.sevenDay.referenceEt0Mm], [],
-    [tr('Your decision brief')], ...nextActions.map(action => [action]), [],
-    [tr('Date'), tr('High') + ' °C', tr('Low') + ' °C', tr('Rain') + ' mm', 'ET₀ mm', tr('Wind') + ' km/h'],
-    ...weather.daily.map(day => [day.date, day.highC, day.lowC, day.rainMm, day.referenceEt0Mm, day.windMaxKmh]),
+    [tr(weather.kind === 'historical' ? 'Historical 7-day rain' : '7-day rain'), weather.sevenDay.rainMm],
+    [tr('7-day reference ET₀'), weather.sevenDay.referenceEt0Mm],
+    [tr('Break-even selling price per tonne'), economics.breakEvenPricePerTonne],
+    [tr('Break-even yield (t/ha)'), economics.breakEvenYieldTonnesPerHa], [],
+    [tr('Your decision brief')], ...decisions.map(decision => [
+      decision.title, decision.action, decision.reason, decision.needed, decision.benchmark, decision.followUp, decision.sourceUrl,
+    ]), [],
+    [tr('Date'), tr('High') + ' °C', tr('Low') + ' °C', tr('Rain') + ' mm', tr('Chance of rain') + ' %', 'ET₀ mm', tr('Daily maximum wind') + ' km/h'],
+    ...weather.daily.map(day => [day.date, day.highC, day.lowC, day.rainMm, day.rainProbabilityPercent, day.referenceEt0Mm, day.windMaxKmh]),
+    ...(season ? [[], [tr('Previous-year rainfall from NASA POWER'), season.year],
+      [tr('Data source details'), season.sourceUrl], [tr('Retrieved at'), season.retrievedAt],
+      [tr('Historical annual rainfall'), season.annualRainMm],
+      ...season.months.map(({ month, rain }) => [month, rain])] : []),
   ];
   return rows.map(row => row.map(value => {
     const text = String(value ?? '');
@@ -1275,13 +1454,14 @@ function downloadBlob(name, blob) {
 }
 
 async function downloadSimpleReportJpg(payload, name) {
-  const { language, direction, location, farm, weather, economics, evidence, nextActions } = payload;
+  const { language, direction, location, farm, weather, economics, evidence, decisions, season } = payload;
   const tr = value => tFor(language, value);
   const locale = reportLocales[language] || 'en-US';
   const rtl = direction === 'rtl';
+  const measure = (value, unit, precision) => reportMeasure(value, unit, precision, language);
   const canvas = document.createElement('canvas');
   canvas.width = 1600;
-  canvas.height = 2100;
+  canvas.height = 4200;
   const ctx = canvas.getContext('2d');
   ctx.fillStyle = '#eef4eb';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -1295,15 +1475,29 @@ async function downloadSimpleReportJpg(payload, name) {
     ctx.font = weight + ' ' + size + 'px Arial';
     ctx.fillText(String(value), x, y, 1380);
   };
+  const paragraph = (value, y, size = 31) => {
+    ctx.font = size + 'px Arial';
+    let current = '';
+    for (const word of value.split(/\s+/)) {
+      const candidate = current ? current + ' ' + word : word;
+      if (current && ctx.measureText(candidate).width > 1380) {
+        line(current, y, size, '#3e5c4d');
+        y += size * 1.4;
+        current = word;
+      } else current = candidate;
+    }
+    line(current, y, size, '#3e5c4d');
+    return y + size * 1.4;
+  };
   line('AGRIPULSE · ' + tr('FARM DECISION REPORT'), 82, 24, '#bfe78b', '600');
   line(location.name, 168, 66, '#fff', '700');
-  line([location.country, new Date(payload.generatedAt).toLocaleDateString(locale)].filter(Boolean).join(' · '), 226, 26, '#d7e9df');
+  line([location.country, new Date(payload.generatedAt).toLocaleDateString(locale, { calendar: 'gregory' })].filter(Boolean).join(' · '), 226, 26, '#d7e9df');
   line([weather.source, weather.classification].filter(Boolean).join(' · '), 286, 29, '#fff', '600');
   line(tr('Data period') + ' · ' + (reportPeriod(weather, locale) || tr('Not available')), 333, 25, '#d7e9df');
 
   const cards = [
-    [tr(weather.kind === 'historical' ? 'Latest recorded temperature' : 'Temperature'), reportMeasure(weather.current?.temperatureC, '°C')],
-    [tr('7-day rain'), reportMeasure(weather.sevenDay.rainMm, 'mm', 1)],
+    [tr(weather.kind === 'historical' ? 'Latest recorded temperature' : 'Temperature'), measure(weather.current?.temperatureC, '°C')],
+    [tr(weather.kind === 'historical' ? 'Historical 7-day rain' : '7-day rain'), measure(weather.sevenDay.rainMm, 'mm', 1)],
     [tr('Crops'), farm.crops.join(', ') || tr('Not selected')],
     [tr('Planning margin per hectare'), reportMoney(economics.planningMarginPerHa, economics.currency, language)],
   ];
@@ -1326,22 +1520,40 @@ async function downloadSimpleReportJpg(payload, name) {
   line(tr('Field evidence'), 881, 34, '#173d34', '700');
   [
     [tr('Coordinates'), location.latitude.toFixed(4) + ', ' + location.longitude.toFixed(4)],
-    [tr('Water source'), farm.waterSource], [tr('Soil pH'), farm.soilPH ?? tr('Unknown')],
+    [tr('Water source'), farm.waterSource], [tr('Soil pH'), measure(simpleNumericInput(farm.soilPH), '', 2)],
     [tr('Texture'), farm.soilTexture], [tr('Drainage'), farm.drainage],
-    [tr('7-day reference ET₀'), reportMeasure(weather.sevenDay.referenceEt0Mm, 'mm', 1)],
+    [tr('7-day reference ET₀'), measure(weather.sevenDay.referenceEt0Mm, 'mm', 1)],
   ].forEach(([label, value], i) => line('• ' + label + ' · ' + value, 943 + i * 52, 27, '#3e5c4d'));
   line(tr('Your decision brief'), 1320, 34, '#173d34', '700');
-  nextActions.forEach((value, i) => line((i + 1) + '. ' + value, 1382 + i * 65, 29, '#3e5c4d'));
-
-  ctx.fillStyle = '#dcebd4';
-  ctx.fillRect(80, 1650, 1440, 365);
-  line(tr('Evidence and limitations'), 1718, 30, '#173d34', '700');
-  evidence.limitations.forEach((value, i) => line('• ' + value, 1780 + i * 51, 26, '#375342'));
+  let reportY = 1382;
+  for (const decision of decisions) {
+    line(decision.title, reportY, 31, '#173d34', '700');
+    reportY = paragraph(decision.action, reportY + 48);
+    reportY = paragraph(decision.reason, reportY, 28);
+    if (decision.benchmark) reportY = paragraph(decision.benchmark, reportY, 28);
+    if (decision.followUp) reportY = paragraph(decision.followUp, reportY, 28);
+    if (decision.needed) reportY = paragraph(tr('Still needed') + ' · ' + decision.needed, reportY, 28);
+    reportY += 30;
+  }
+  if (season) {
+    line(tr('Previous-year rainfall from NASA POWER') + ' · ' +
+      new Intl.NumberFormat(locale, { useGrouping: false }).format(season.year), reportY, 31, '#173d34', '700');
+    reportY = paragraph(season.annualRainMm === null ? tr('Annual rainfall is unavailable because some months are incomplete.')
+      : tr('Historical annual rainfall') + ' · ' + measure(season.annualRainMm, 'mm', 1), reportY + 48, 28);
+    reportY += 30;
+  }
+  line(tr('Evidence and limitations'), reportY, 30, '#173d34', '700');
+  reportY += 52;
+  for (const note of evidence.limitations) reportY = paragraph('• ' + note, reportY, 26);
   if (weather.retrievedAt) {
-    line(tr('Retrieved at') + ' · ' + new Date(weather.retrievedAt).toLocaleString(locale), 1970, 24, '#375342');
+    reportY = paragraph(tr('Retrieved at') + ' · ' + new Date(weather.retrievedAt).toLocaleString(locale), reportY + 15, 24);
   }
 
-  const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.92));
+  const output = document.createElement('canvas');
+  output.width = canvas.width;
+  output.height = Math.min(canvas.height, Math.ceil(reportY + 65));
+  output.getContext('2d').drawImage(canvas, 0, 0);
+  const blob = await new Promise(resolve => output.toBlob(resolve, 'image/jpeg', 0.92));
   if (!blob) throw new Error('Image export could not be generated.');
   downloadBlob(name, blob);
 }
@@ -1424,6 +1636,7 @@ async function runSimpleAnalysis() {
     renderRotations();
     renderSimpleResults();
     setSimpleStep(4);
+    $('#simple-decision-heading')?.focus();
   } finally {
     if (button) button.disabled = false;
     if (status) status.textContent = '';
@@ -1506,6 +1719,32 @@ function bindEvents() {
       },
       "close-simple-settings": () => $('#simple-settings-dialog')?.close(),
       "simple-save": () => downloadSimpleReport(),
+      "simple-edit-report": () => {
+        setSimpleStep(2);
+        const form = $('#simple-farm-form');
+        form.dataset.returnToReport = 'true';
+        form.querySelector('button[type="submit"]').textContent = t('Save and update report');
+        form.elements[action.dataset.field]?.focus();
+      },
+      "simple-retry-weather": async () => {
+        action.disabled = true;
+        action.textContent = t('Refreshing forecast…');
+        await loadWeather(true);
+      },
+      "simple-load-season": async () => {
+        const status = action.parentElement.querySelector('[data-simple-season-status]');
+        action.disabled = true;
+        status.textContent = t('Loading historical rainfall…');
+        status.focus({ preventScroll: true });
+        await loadNasa();
+        if (state.nasa && !$('[data-simple-stage="4"]')?.hidden) {
+          renderSimpleResults();
+          $('.simple-report-season summary')?.focus({ preventScroll: true });
+        } else if (action.isConnected) {
+          action.disabled = false;
+          status.textContent = t('Historical rainfall could not be loaded. Try again.');
+        }
+      },
       "close-simple-export": () => $('#simple-export-dialog')?.close(),
       "simple-report-more": () => {
         const details = document.getElementById(action.getAttribute('aria-controls'));
@@ -1660,12 +1899,19 @@ function bindEvents() {
   $('#simple-farm-form')?.addEventListener('submit', (event) => {
     event.preventDefault();
     const form = event.currentTarget;
+    const rawPH = form.elements.soilPH.value.trim();
+    const soilPH = simpleNumericInput(rawPH, 14);
+    if (rawPH && soilPH === null) {
+      toast(t('Enter a soil pH between 0 and 14, or leave it blank.'));
+      form.elements.soilPH.focus();
+      return;
+    }
     state.simpleFarm = {
       objective: form.elements.objective.value,
       waterSource: form.elements.waterSource.value,
       crop: state.simpleFarm.crop || 'recommend',
       crops: state.simpleFarm.crops || [],
-      soilPH: form.elements.soilPH.value.trim(),
+      soilPH: soilPH === null ? '' : String(soilPH),
       soilTexture: form.elements.soilTexture.value,
       drainage: form.elements.drainage.value,
       localYield: form.elements.localYield.value,
@@ -1678,6 +1924,11 @@ function bindEvents() {
     $('#planning-priority').value = state.simpleFarm.objective === 'risk' ? 'resilience' : state.simpleFarm.objective;
     $('#irrigation').value = state.simpleFarm.waterSource === 'irrigated' ? 'irrigated' : 'rainfed';
     renderRotations();
+    if (form.dataset.returnToReport && (state.simpleFarm.crops || []).length) {
+      delete form.dataset.returnToReport;
+      runSimpleAnalysis();
+      return;
+    }
     setSimpleStep(3);
   });
   $('#simple-crops-form')?.addEventListener('submit', (event) => {
@@ -2116,15 +2367,13 @@ function clearNasa() {
 }
 function selectLocation(point, move = true) {
   if (!validPoint(point)) throw new Error("Please enter valid coordinates.");
+  const previousKey = hasLocation() ? fieldKey() : null;
   state.location = {
     ...point,
     boundary: point.boundary ?? null,
     id: point.id ?? crypto.randomUUID(),
   };
-  if (point.country) {
-    state.simpleFarm.currency = countryCurrencies[point.country] || 'USD';
-    write('fieldshift.simpleFarm', state.simpleFarm);
-  }
+  restoreSimpleFarm(previousKey);
   clearNasa();
   // A new point does not inherit a previous field’s geometry.
   state.map.clearBoundary();
