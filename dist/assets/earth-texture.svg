@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-label="Stylized Earth illustration — SI-generated conceptual illustration, not observational imagery">
+<title>Stylized Earth illustration | SI-generated conceptual visual</title>
+<defs>
+<linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#04162E"/><stop offset=".83" stop-color="#173E60"/></linearGradient>
+<radialGradient id="sun" cx=".75" cy=".3"><stop offset="0" stop-color="#FFF9DD" stop-opacity=".82"/><stop offset="1" stop-color="#FFF9DD" stop-opacity="0"/></radialGradient>
+<linearGradient id="earthShine" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#DDF5FF" stop-opacity=".45"/><stop offset=".6" stop-color="#0074B5" stop-opacity="0"/><stop offset="1" stop-color="#05243B" stop-opacity=".5"/></linearGradient>
+</defs>
+<rect width="1600" height="900" fill="url(#sky)"/>
+<rect width="1600" height="900" fill="url(#sun)"/>
+
+<circle cx="820" cy="495" r="385" fill="#1876A9"/><circle cx="820" cy="495" r="385" fill="url(#earthShine)"/><path d="M560 270Q640 180 725 235L770 305L665 350L645 440L755 565L708 710Q570 678 495 565L480 400Z" fill="#469B71"/><path d="M865 175L975 210L1010 300L960 365L1090 445L1010 570L890 570L840 480L900 380L810 300Z" fill="#61B881"/><path d="M700 640L820 625L865 725L790 845L705 790Z" fill="#3F916A"/><circle cx="820" cy="495" r="386" fill="none" stroke="#BFE9FF" stroke-width="12" stroke-opacity=".65"/><g fill="#E2F7FF"><circle cx="100" cy="100" r="2" opacity=".6"/><circle cx="155" cy="231" r="3" opacity=".6"/><circle cx="210" cy="362" r="4" opacity=".6"/><circle cx="265" cy="493" r="2" opacity=".6"/><circle cx="320" cy="224" r="3" opacity=".6"/><circle cx="375" cy="355" r="4" opacity=".6"/><circle cx="430" cy="486" r="2" opacity=".6"/><circle cx="485" cy="217" r="3" opacity=".6"/><circle cx="540" cy="348" r="4" opacity=".6"/><circle cx="595" cy="479" r="2" opacity=".6"/><circle cx="650" cy="210" r="3" opacity=".6"/><circle cx="705" cy="341" r="4" opacity=".6"/><circle cx="760" cy="472" r="2" opacity=".6"/><circle cx="815" cy="203" r="3" opacity=".6"/><circle cx="870" cy="334" r="4" opacity=".6"/><circle cx="925" cy="465" r="2" opacity=".6"/><circle cx="980" cy="196" r="3" opacity=".6"/><circle cx="1035" cy="327" r="4" opacity=".6"/><circle cx="1090" cy="458" r="2" opacity=".6"/><circle cx="1145" cy="189" r="3" opacity=".6"/><circle cx="1200" cy="320" r="4" opacity=".6"/><circle cx="1255" cy="451" r="2" opacity=".6"/><circle cx="1310" cy="182" r="3" opacity=".6"/><circle cx="1365" cy="313" r="4" opacity=".6"/><circle cx="1420" cy="444" r="2" opacity=".6"/></g>
+<rect x="42" y="810" width="700" height="54" rx="12" fill="#061720" fill-opacity=".76"/>
+<text x="63" y="844" fill="#E9F9ED" font-size="24" font-family="Arial,sans-serif" font-weight="700" letter-spacing="1">SI-GENERATED VISUAL · ILLUSTRATION</text>
+</svg>
