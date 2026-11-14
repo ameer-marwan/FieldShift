@@ -42,14 +42,51 @@ test('economics applies local selling losses, transport and market fees', () => 
   assert.throws(() => calculateEconomics({ ...basic, marketFeePercent: -1 }));
 });
 
-test('rotation scenarios do not invent crop suitability without approved evidence', () => {
-  const value = recommendRotations({ priority: 'water', currentCrop: 'wheat', irrigated: false, ph: 6.5 });
-  assert.equal(value[0].id, 'water');
-  assert.equal(value.length, 3);
-  assert.ok(value.every(plan => plan.sequence.length === 0));
-  assert.ok(value.every(plan => plan.evidence === 'No inferred suitability values'));
-  assert.ok(value.every(plan => plan.limitations.length > 0));
-  assert.ok(recommendRotations({ ph: 14 }).every(plan => plan.sequence.length === 0));
+test('rotation explorer returns three illustrative family-diverse pathways for every catalog crop', () => {
+  const family = id => crops.find(c => c.id === id)?.family;
+  assert.equal(crops.length, 10);
+  for (const currentCrop of crops) {
+    const result = recommendRotations({ priority: 'water', currentCrop: currentCrop.id, irrigated: false, ph: 6.5 });
+    assert.deepEqual(result.map(plan => plan.id), ['water','soil','risk']);
+    assert.equal(result.length, 3);
+    for (const plan of result) {
+      assert.equal(plan.sequence.length, 2, 'each pathway has two candidate future stages');
+      assert.ok(plan.sequence.every(id => crops.some(c => c.id === id)));
+      assert.notEqual(family(currentCrop.id), family(plan.sequence[0]), 'no consecutive family repeats from current crop');
+      assert.notEqual(family(plan.sequence[0]), family(plan.sequence[1]), 'next stages change plant family');
+      assert.match(plan.evidence, /Exploratory pathway/);
+      assert.match(plan.limitations.join(' '), /NOT validated/);
+      assert.ok(plan.sourceUrl.startsWith('https://www.nrcs.usda.gov/'));
+      assert.equal(plan.nasaContext, null, 'NASA context cannot be invented when not loaded');
+    }
+  }
+});
+
+test('completed NASA POWER historical rainfall is described but never treated as crop demand', () => {
+  const nasa = {
+    year: 2025,
+    months: Array.from({ length: 12 }, (_, i) => ({month: i+1, rain: i % 3 === 0 ? 0 : 10 }))
+  };
+  const plans = recommendRotations({ priority: 'soil', currentCrop: 'wheat', nasa, ph: 7.1, irrigated: false });
+  assert.equal(plans[0].nasaContext.complete, true);
+  assert.equal(plans[0].nasaContext.annualRainfallMm, 80);
+  assert.equal(plans[0].nasaContext.zeroMonths, 4);
+  assert.match(plans[0].reasons.join(' '), /NASA POWER 2025: 80\.0 mm historical annual rainfall/);
+  assert.match(plans[0].reasons.join(' '), /rainfed/i);
+  assert.match(plans[0].reasons.join(' '), /pH: 7\.1/);
+  assert.match(plans[0].reasons.join(' '), /not future irrigation needs/);
+});
+
+test('partial or missing NASA data never produces a fabricated rainfall total or field suitability score', () => {
+  const partial = recommendRotations({ nasa: { year: 2025, months: [{ month:1, rain: 0 }, { month:2, rain: null }] } });
+  assert.equal(partial[0].nasaContext.complete, false);
+  assert.equal(partial[0].nasaContext.availableMonths, 1);
+  assert.equal(partial[0].nasaContext.annualRainfallMm, undefined);
+  assert.match(partial[0].reasons.join(' '), /incomplete/);
+  assert.ok(partial.every(p => p.readiness === 'Requires local validation'));
+  const absent = recommendRotations({ irrigated: true, ph: 14 });
+  assert.match(absent[0].reasons.join(' '), /NASA POWER historical rainfall not loaded/);
+  assert.match(absent[0].reasons.join(' '), /not been connected or checked/);
 });
 
 test('weather null values stay unavailable while genuine zero is preserved', async () => {

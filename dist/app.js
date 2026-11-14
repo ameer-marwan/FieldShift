@@ -466,7 +466,7 @@ function init() {
   const horizon = document.createElement("article");
   horizon.className = "panel season-horizon";
   horizon.innerHTML =
-    '<div class="panel-heading"><div><span class="eyebrow">SEASON HORIZON</span><h2>Plan the next stages</h2></div><span class="pill">PLANNING VIEW</span></div><div id="season-horizon"></div><p class="fine-print">A planning horizon based on your selected rotation. Confirm local planting and harvest dates before acting.</p>';
+    '<div class="panel-heading"><div><span class="eyebrow">CROP SEQUENCE EXPLORER</span><h2>Compare possible stages</h2></div><span class="pill">ILLUSTRATIVE · NOT VALIDATED</span></div><div id="season-horizon"></div><p class="fine-print">These are family-diversity examples, NOT planting dates or suitability advice. Confirm agronomy, growing season, irrigation and local soil evidence before acting.</p>';
   $("#view-crops").insertBefore(horizon, $("#view-crops .data-note"));
   const challengeCenter = document.createElement("section");
   challengeCenter.className = "challenge-center panel";
@@ -2086,18 +2086,12 @@ function renderSeasonHorizon() {
       ),
     ]
       .filter(Boolean)
-      .slice(0, 3),
-    start = new Date();
+      .slice(0, 3);
   host.innerHTML = sequence
     .map((crop, index) => {
-      const date = new Date(start);
-      date.setMonth(date.getMonth() + index * 4);
       return (
         '<div class="season-stage"><span class="season-stage-date">' +
-        date.toLocaleDateString(undefined, {
-          month: "short",
-          year: "numeric",
-        }) +
+        (index === 0 ? "Current crop" : "Proposed stage " + index) +
         "</span><i>♧</i><b>" +
         escapeHTML(crop.name) +
         "</b><small>" +
@@ -2779,6 +2773,7 @@ function renderRotations() {
     irrigated: $("#irrigation").value === "irrigated",
     ph: ph === "" ? null : Number(ph),
     weather: state.weather,
+    nasa: state.nasa,
   });
   if (!state.rotationOptions.some((p) => p.id === state.selectedPlan))
     state.selectedPlan = state.rotationOptions[0]?.id;
@@ -2790,7 +2785,7 @@ function renderRotations() {
         '"><div class="plan-top"><span class="plan-number">PATH / 0' +
         (i + 1) +
         '</span><span class="pill">' +
-        (plan.id === state.selectedPlan ? "SELECTED" : "TRAIT SCREENING") +
+        (plan.id === state.selectedPlan ? "SELECTED" : "ILLUSTRATIVE") +
         "</span></div><h2>" +
         escapeHTML(plan.name) +
         '</h2><div class="sequence">' +
@@ -2881,14 +2876,12 @@ function renderCropLibrary(filter = "") {
           '</p><div class="crop-traits"><span>' +
           escapeHTML(c.season) +
           "</span><span>pH " +
-          c.phMin +
-          "–" +
-          c.phMax +
+          (c.phMin === null || c.phMax === null ? "not validated" : c.phMin + "–" + c.phMax) +
           "</span><span>" +
           escapeHTML(c.waterDemand) +
           ' demand</span></div><a href="' +
           escapeHTML(c.reference) +
-          '" target="_blank" rel="noreferrer">FAO crop reference ↗</a></article>',
+          '" target="_blank" rel="noreferrer">Rotation principles ↗</a></article>',
       )
       .join("") || '<p class="empty">No matching crops.</p>';
   replaceArrowGlyphs();
@@ -3655,6 +3648,7 @@ async function loadNasa() {
     const result = await fetchNasa(state.location, { signal: state.nasaController.signal });
     if (key !== fieldKey()) return;
     state.nasa = result;
+    renderRotations(); // Re-evaluate narrative when historical NASA evidence arrives.
     const max = Math.max(1, ...result.months.map((m) => m.rain ?? 0));
     container.innerHTML =
       '<span class="eyebrow">' +
