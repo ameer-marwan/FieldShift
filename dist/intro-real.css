@@ -18,7 +18,7 @@
 .agripulse-intro.ap-diving .ap-earth-stage{animation:ap-earth-dive 1.5s cubic-bezier(.68,.02,.86,.3) forwards}
 .ap-earth-canvas{position:absolute;width:100%;height:100%;inset:0;opacity:0;transform:rotate(-15deg);filter:drop-shadow(0 0 5px #77c7ff66)}
 .ap-earth-canvas.texture-ready{opacity:1}
-.ap-earth-fallback{position:absolute;inset:1%;border-radius:50%;overflow:hidden;background:#124968 url('assets/earth-texture.jpg') 50% center/auto 100%;box-shadow:inset -65px -8px 80px #000d,inset 7px 2px 11px #98d8ff55;animation:ap-fallback-rotation 12s linear infinite;transform:rotate(-15deg)}
+.ap-earth-fallback{position:absolute;inset:1%;border-radius:50%;overflow:hidden;background:#124968 50% center/auto 100%;box-shadow:inset -65px -8px 80px #000d,inset 7px 2px 11px #98d8ff55;animation:ap-fallback-rotation 12s linear infinite;transform:rotate(-15deg)}
 .ap-earth-fallback[hidden]{display:none}
 .ap-atmosphere{position:absolute;inset:0;border-radius:50%;box-shadow:0 0 14px 1px #5baffb6e,0 0 75px 14px #5baffb20;opacity:.8}
 .ap-atmosphere:after{content:'';position:absolute;inset:-15%;border-radius:50%;background:radial-gradient(circle,transparent 50%,#2784ba13 56%,transparent 70%)}
@@ -170,3 +170,24 @@
   .ap-static .ap-plant-scene{opacity:1;transform:none}
   .ap-static .ap-journey-line i{width:100%}
 }
+
+.ap-intro-actions { display: flex; align-items: center; gap: .6rem; }
+.agripulse-intro .ap-intro-demo, .agripulse-intro .ap-watch-intro {
+  padding: .55rem .9rem; border: 1px solid #b6d1a0; border-radius: 10px;
+  background: #10251c; color: #f5f9ee; font-size: .82rem;
+}
+.agripulse-intro .ap-watch-intro { margin-block-start: 1rem; }
+.ap-mode-selecting .ap-intro-skip { display: none; }
+.ap-landscape { background-image: none; }
+.ap-land .ap-landscape { background-image: url('assets/intro-farmland.jpg'); }
+.ap-mode-selecting:not(.ap-static) .ap-landscape { background-image: none; }
+.ap-mode-selecting .ap-earth-stage { display: none; }
+.ap-mode-picker { max-height: calc(100dvh - 8rem); overflow-y: auto; padding: .4rem; }
+.ap-mode-picker .ap-mode-grid, .ap-mode-picker .ap-mode-card { text-align: start; }
+@media (max-width: 450px) {
+  .ap-intro-actions { gap: .3rem; }
+  .agripulse-intro .ap-intro-demo { padding: .45rem .65rem; }
+}
+
+
+.ap-running .ap-earth-fallback { background-image: url('assets/earth-texture.jpg'); }

@@ -26,21 +26,21 @@ html=html.replace(/<link rel="stylesheet" href="[^"]+"\s*\/?>/g,'').replace('</h
 html=html.replaceAll('assets/logo-new.png',logo);
 html=html.replaceAll('assets/dunia-alajial-logo.jpg',await dataUri('dist/assets/dunia-alajial-logo.jpg','image/jpeg'));
 let js='(async()=>{\nconst __fieldshiftModules = {};\n';
-for(const name of ['storage','accounts','data','geo','planning','scenes','i18n','growth','intro']){
+for(const name of ['storage','accounts','data','geo','i18n','planning','scenes','growth','intro','rotation-comparison']){
   let code=await read('dist/'+name+'.js');
   const names=[...code.matchAll(/^export\s+(?:async\s+)?(?:function|const|let|class)\s+(\w+)/gm)].map(m=>m[1]);
   if(!names.length)throw Error('No named exports in '+name);
   code=code.replace(/^export\s+/gm,'');
-  code=code.replace(/^import\s+\{([^}]+)\}\s+from\s+['"]\.\/(\w+)\.js['"];?/gm,(_match,names,module)=>'const {'+names+'} = __fieldshiftModules.'+module+';');
+  code=code.replace(/^import\s+\{([^}]+)\}\s+from\s+['"]\.\/([\w-]+)\.js['"];?/gm,(_match,names,module)=>'const {'+names+'} = __fieldshiftModules['+JSON.stringify(module)+'];');
   if(/^import\s/m.test(code))throw Error('Resolve module imports before packaging '+name);
-  js+='__fieldshiftModules.'+name+' = (()=>{\n'+code+'\nreturn {'+names.join(',')+'};\n})();\n';
+  js+='__fieldshiftModules['+JSON.stringify(name)+'] = (()=>{\n'+code+'\nreturn {'+names.join(',')+'};\n})();\n';
 }
 let app=await read('dist/app.js');
-app=app.replace(/^import\s+\{([^}]+)\}\s+from\s+['"]\.\/(\w+)\.js['"];?/gm,(_match,names,module)=>'const {'+names+'} = __fieldshiftModules.'+module+';');
+app=app.replace(/^import\s+\{([^}]+)\}\s+from\s+['"]\.\/([\w-]+)\.js['"];?/gm,(_match,names,module)=>'const {'+names+'} = __fieldshiftModules['+JSON.stringify(module)+'];');
 if(/^import\s/m.test(app))throw Error('Unresolved app import');
 js+=app+'\n})().catch(error=>{console.error(error);document.body.classList.remove("intro-pending");});';
 const vendor=await read('dist/vendor/maplibre-gl.js');
-html=html.replace('<script src="vendor/maplibre-gl.js"></script>',()=>'<script>'+scriptSafe(vendor)+'</script>');
+html=html.replace('<script type="module" src="app.js"></script>', marker => '<script>' + scriptSafe(vendor) + '</script>' + marker);
 html=html.replace('<script type="module" src="app.js"></script>',()=>'<script>'+scriptSafe(js)+'</script>');
 // Dynamic intro markup is part of the injected bundle, so embed its logo after script assembly too.
 html=html.replaceAll('assets/logo-new.png',logo);

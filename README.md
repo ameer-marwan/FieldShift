@@ -10,6 +10,8 @@ AgriPulse is an interactive agricultural decision workspace created for the **20
 
 **[Open the public AgriPulse preview →](https://agripulse-1.vercel.app/)**
 
+**[Try the example field →](https://agripulse-1.vercel.app/#/demo)** to compare two editable rotations, see NASA POWER rainfall for the planned planting months, and download the comparison in English or Arabic.
+
 **[↓ Download the “From Space to Soil” presentation](https://github.com/ameer-marwan/AgriPulse/raw/main/media/AgriPulse_Space_to_Soil.pdf)**
 
 **[↓ Download “How NASA Data Solves Farming’s Biggest Problem”](https://github.com/ameer-marwan/AgriPulse/raw/main/media/how-nasa-data-solves-farming.mp4)**

@@ -21,6 +21,7 @@ try {
   await page.waitForTimeout(600);
   const canvas=intro.locator('canvas').first();
   assert.equal(await canvas.count(),1,'The intro contains a rendered globe');
+  await page.waitForFunction(()=>document.querySelector('.ap-earth-canvas')?.classList.contains('texture-ready'));
   const first=hash(await canvas.evaluate(node=>node.toDataURL()));
   await page.waitForTimeout(450);
   const second=hash(await canvas.evaluate(node=>node.toDataURL()));
@@ -65,7 +66,7 @@ try {
   observe(mobile);
   await mobile.goto(origin,{waitUntil:'domcontentloaded'});
   await mobile.locator('.fieldshift-intro').waitFor({state:'visible'});
-  await mobile.locator('.intro-skip').click();
+  await mobile.locator('.ap-advanced-mode').click();
   await mobile.locator('.fieldshift-intro').waitFor({state:'hidden'});
   await mobile.evaluate(()=>window.__fieldshiftIntro.open());
   await mobile.waitForFunction(()=>document.querySelector('.fieldshift-intro')?.classList.contains('revealed'));
@@ -79,6 +80,7 @@ try {
   const reduced=await browser.newPage({viewport:{width:1024,height:768},reducedMotion:'reduce'});
   observe(reduced);
   await reduced.goto(origin,{waitUntil:'domcontentloaded'});
+  await reduced.getByRole('button',{name:'Watch introduction'}).click();
   await reduced.waitForFunction(()=>document.querySelector('.fieldshift-intro')?.classList.contains('revealed'),null,{timeout:2000});
   await reduced.locator('.earth-intro-enter').click();
   await reduced.locator('.fieldshift-intro').waitFor({state:'hidden'});

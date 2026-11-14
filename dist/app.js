@@ -17,6 +17,7 @@ import {
   polygonReferencePoint,
 } from "./geo.js";
 import { initPlanning } from "./planning.js";
+import { exampleField, mountRotationComparison, renderRotationReport } from "./rotation-comparison.js";
 import { initScenes } from "./scenes.js";
 import { initI18n, t, tFor, currentLanguage } from "./i18n.js";
 import { initIntro } from "./intro.js";
@@ -58,6 +59,7 @@ let savedFarmerMode = 'advanced';
 try { savedFarmerMode = localStorage.getItem('agripulse.farmer-mode') || 'advanced'; } catch { /* Use full controls if preferences cannot persist. */ }
 applyFarmerMode(savedFarmerMode);
 window.addEventListener('fieldshift:mode:selected', (event) => switchFarmerMode(event.detail));
+window.addEventListener('agripulse:demo', () => { location.hash = '/demo'; });
 
 const $ = (q, root = document) => root.querySelector(q);
 const $$ = (q, root = document) => [...root.querySelectorAll(q)];
@@ -355,14 +357,14 @@ function init() {
       <div class="explore-world-stats" aria-label="Explore page summary"><span><b>5</b> countries</span><span><b>4</b> continents</span><span><b>1</b> shared future</span></div>
     </header>
     <div class="explore-feature-grid">
-      <article class="world-feature world-china"><img src="assets/explore-china.webp" alt="Farm workers tending green rice fields in China"><div class="world-feature-copy"><span class="world-country-code">CN / 01</span><span class="eyebrow">ASIA · RICE, WHEAT & VEGETABLES</span><h2>China</h2><p>USDA NASS QuickStats provides published agricultural statistics for validating acreage, production, yields, and crop frequency in the United States.</p><p class="world-caveat">Statistics must be selected by place, crop, year, and survey. AgriPulse does not invent missing production values.</p><div class="world-sources"><a href="https://quickstats.nass.usda.gov/" target="_blank" rel="noopener noreferrer">USDA NASS QuickStats ↗</a><a href="https://agdatacommons.nal.usda.gov/" target="_blank" rel="noopener noreferrer">USDA Ag Data Commons ↗</a></div></div></article>
-      <article class="world-feature world-ksa"><img src="assets/explore-ksa.webp" alt="Agricultural robots working between crops inside a modern Saudi greenhouse"><div class="world-feature-copy"><span class="world-country-code">SA / 02</span><span class="eyebrow">SAUDI ARABIA · AGRITECH</span><h2>Saudi Arabia</h2><p>FAO GAEZ provides global crop-suitability, soil-constraint, water-availability, and yield-potential layers for comparing agricultural options.</p><p class="world-caveat">Technology supports decisions, but crops and systems still need to fit local water, soil and climate conditions.</p><div class="world-sources"><a href="https://gaez.fao.org/" target="_blank" rel="noopener noreferrer">Open FAO GAEZ ↗</a></div></div></article>
+      <article class="world-feature world-china"><img loading="lazy" decoding="async" src="assets/explore-china.webp" alt="Farm workers tending green rice fields in China"><div class="world-feature-copy"><span class="world-country-code">CN / 01</span><span class="eyebrow">ASIA · RICE, WHEAT & VEGETABLES</span><h2>China</h2><p>USDA NASS QuickStats provides published agricultural statistics for validating acreage, production, yields, and crop frequency in the United States.</p><p class="world-caveat">Statistics must be selected by place, crop, year, and survey. AgriPulse does not invent missing production values.</p><div class="world-sources"><a href="https://quickstats.nass.usda.gov/" target="_blank" rel="noopener noreferrer">USDA NASS QuickStats ↗</a><a href="https://agdatacommons.nal.usda.gov/" target="_blank" rel="noopener noreferrer">USDA Ag Data Commons ↗</a></div></div></article>
+      <article class="world-feature world-ksa"><img loading="lazy" decoding="async" src="assets/explore-ksa.webp" alt="Agricultural robots working between crops inside a modern Saudi greenhouse"><div class="world-feature-copy"><span class="world-country-code">SA / 02</span><span class="eyebrow">SAUDI ARABIA · AGRITECH</span><h2>Saudi Arabia</h2><p>FAO GAEZ provides global crop-suitability, soil-constraint, water-availability, and yield-potential layers for comparing agricultural options.</p><p class="world-caveat">Technology supports decisions, but crops and systems still need to fit local water, soil and climate conditions.</p><div class="world-sources"><a href="https://gaez.fao.org/" target="_blank" rel="noopener noreferrer">Open FAO GAEZ ↗</a></div></div></article>
     </div>
     <div class="explore-world-section-heading"><div><span class="eyebrow">MORE FIELD STORIES</span><h2>Innovation takes many forms.</h2></div><p>Different places solve different constraints—from limited land and water to changing weather and farm access.</p></div>
     <div class="world-story-grid">
-      <article class="world-story"><div class="world-story-image"><img src="assets/explore-netherlands.webp" alt="A high-technology greenhouse growing tomatoes and peppers in the Netherlands"><span>NL / EUROPE</span></div><div class="world-story-copy"><span class="eyebrow">CONTROLLED ENVIRONMENTS</span><h3>Netherlands</h3><p>Glasshouses, hydroponics and climate controls help growers produce high-value crops while closely managing water, nutrients and space.</p><a href="https://dataspace.copernicus.eu/explore-data/data-collections/sentinel-data/sentinel-2" target="_blank" rel="noopener noreferrer">Open Sentinel-2 ↗</a></div></article>
-      <article class="world-story"><div class="world-story-image"><img src="assets/explore-kenya.webp" alt="A Kenyan farmer using a tablet near solar irrigation and a mapping drone"><span>KE / AFRICA</span></div><div class="world-story-copy"><span class="eyebrow">SMALLHOLDER INNOVATION</span><h3>Kenya</h3><p>Mobile information, solar-powered irrigation and field mapping can help small farms respond to weather, reach advice and manage scarce resources.</p><a href="https://gpm.nasa.gov/data" target="_blank" rel="noopener noreferrer">Open GPM data ↗</a></div></article>
-      <article class="world-story"><div class="world-story-image"><img src="assets/explore-brazil.webp" alt="Precision farming across organized crop rows beside native vegetation in Brazil"><span>BR / SOUTH AMERICA</span></div><div class="world-story-copy"><span class="eyebrow">SCALE & CONSERVATION</span><h3>Brazil</h3><p>Precision equipment, crop research and conservation practices can work together across large farms and diverse agricultural regions.</p><a href="https://landsat.gsfc.nasa.gov/data/" target="_blank" rel="noopener noreferrer">Open Landsat data ↗</a></div></article>
+      <article class="world-story"><div class="world-story-image"><img loading="lazy" decoding="async" src="assets/explore-netherlands.webp" alt="A high-technology greenhouse growing tomatoes and peppers in the Netherlands"><span>NL / EUROPE</span></div><div class="world-story-copy"><span class="eyebrow">CONTROLLED ENVIRONMENTS</span><h3>Netherlands</h3><p>Glasshouses, hydroponics and climate controls help growers produce high-value crops while closely managing water, nutrients and space.</p><a href="https://dataspace.copernicus.eu/explore-data/data-collections/sentinel-data/sentinel-2" target="_blank" rel="noopener noreferrer">Open Sentinel-2 ↗</a></div></article>
+      <article class="world-story"><div class="world-story-image"><img loading="lazy" decoding="async" src="assets/explore-kenya.webp" alt="A Kenyan farmer using a tablet near solar irrigation and a mapping drone"><span>KE / AFRICA</span></div><div class="world-story-copy"><span class="eyebrow">SMALLHOLDER INNOVATION</span><h3>Kenya</h3><p>Mobile information, solar-powered irrigation and field mapping can help small farms respond to weather, reach advice and manage scarce resources.</p><a href="https://gpm.nasa.gov/data" target="_blank" rel="noopener noreferrer">Open GPM data ↗</a></div></article>
+      <article class="world-story"><div class="world-story-image"><img loading="lazy" decoding="async" src="assets/explore-brazil.webp" alt="Precision farming across organized crop rows beside native vegetation in Brazil"><span>BR / SOUTH AMERICA</span></div><div class="world-story-copy"><span class="eyebrow">SCALE & CONSERVATION</span><h3>Brazil</h3><p>Precision equipment, crop research and conservation practices can work together across large farms and diverse agricultural regions.</p><a href="https://landsat.gsfc.nasa.gov/data/" target="_blank" rel="noopener noreferrer">Open Landsat data ↗</a></div></article>
     </div>
     <aside class="explore-world-note"><span>✦</span><p><b>No single model fits every farm.</b> The strongest ideas are adapted to local people, evidence, climate, soils and water.</p></aside>
     <div class="explore-world-section-heading explore-resources-heading"><div><span class="eyebrow">TRUSTED RESOURCES</span><h2>Learn more about agriculture.</h2></div><p>Continue exploring with Saudi agriculture, NASA Earth observation, and a global view of changing land.</p></div>
@@ -428,7 +430,10 @@ function init() {
   simpleMapHost.id = 'simple-map-host';
   simpleMapHost.className = 'simple-map-host';
   simpleMapHost.innerHTML = '<div class="simple-map-heading"><div><span class="eyebrow">SELECT ON MAP</span><b>Tap the map to choose your field</b></div><span>Interactive map · map or globe</span></div><div class="explorer-tools simple-map-tools"><div class="segmented"><button class="selected" data-map-mode="map"><svg><use href="#i-map"/></svg>Map</button><button data-map-mode="globe"><svg><use href="#i-globe"/></svg>3D globe</button></div><div class="segmented"><button class="selected" data-map-layer="satellite">Satellite</button><button data-map-layer="terrain">SRTM</button><button data-map-layer="thermal">NDVI</button><button data-map-layer="rain">GPM rain</button><button data-map-layer="moisture">SMAP</button></div></div>';
+  simpleMapHost.hidden = true;
   $('#simple-place-results')?.after(simpleMapHost);
+  $('.simple-empty-actions')?.insertAdjacentHTML('beforeend', '<a class="button secondary" href="#/demo">Try an example field</a>');
+  $('#view-overview .page-heading')?.insertAdjacentHTML('beforeend', '<a class="button secondary" href="#/demo">Try an example field</a>');
   const simpleCurrencyField = document.createElement('label');
   simpleCurrencyField.className = 'simple-currency-choice';
   simpleCurrencyField.innerHTML = '<span>Report currency</span><select id="simple-currency"><option value="USD">USD · $</option><option value="SAR">SAR · ﷼</option><option value="AED">AED · د.إ</option><option value="QAR">QAR · ﷼</option><option value="KWD">KWD · د.ك</option><option value="BHD">BHD · د.ب</option><option value="OMR">OMR · ﷼</option><option value="JOD">JOD · د.ا</option><option value="EGP">EGP · E£</option><option value="EUR">EUR · €</option><option value="GBP">GBP · £</option><option value="INR">INR · ₹</option><option value="PKR">PKR · ₨</option><option value="BDT">BDT · ৳</option><option value="CNY">CNY · ¥</option><option value="JPY">JPY · ¥</option><option value="TRY">TRY · ₺</option><option value="CAD">CAD · C$</option><option value="AUD">AUD · A$</option><option value="BRL">BRL · R$</option><option value="MXN">MXN · $</option><option value="ARS">ARS · $</option><option value="CLP">CLP · $</option><option value="COP">COP · $</option><option value="KES">KES · KSh</option><option value="ZAR">ZAR · R</option><option value="NGN">NGN · ₦</option><option value="MAD">MAD · د.م.</option><option value="DZD">DZD · دج</option><option value="TND">TND · د.ت</option><option value="IDR">IDR · Rp</option><option value="MYR">MYR · RM</option><option value="THB">THB · ฿</option><option value="PHP">PHP · ₱</option><option value="RUB">RUB · ₽</option></select><small id="simple-currency-status">Automatically chosen from the selected country. You can change it.</small>';
@@ -478,7 +483,7 @@ function init() {
     '<span class="eyebrow">SATELLITE ANALYSIS</span><b>Boundary context ready</b><p>Satellite basemap is visible. Vegetation-health zones need a connected Sentinel or Landsat index before they can be calculated.</p><a href="https://worldview.earthdata.nasa.gov/" target="_blank" rel="noopener noreferrer">Open NASA Worldview ↗</a>';
   $(".field-details").insertBefore(satellite, $(".saved-fields"));
   $('[data-map-layer="terrain"]').textContent = "SRTM terrain";
-  state.map = createFieldMap($("#field-map"), {
+  mapHandlers = {
     onSelect: (point) =>
       selectLocation(
         { ...point, id: crypto.randomUUID(), name: "Selected point" },
@@ -515,9 +520,8 @@ function init() {
       if (status.level === "error" && !status.message.includes("tiles"))
         toast(status.message);
     },
-  });
-  if (hasLocation()) state.map.setLocation(state.location);
-  if (state.location.boundary) state.map.setBoundary(state.location.boundary);
+  };
+  mountComparisonViews();
   bindEvents();
   initAgriSystem();
   initSeasonSimulator();
@@ -563,10 +567,13 @@ function init() {
     rerender: () => {
       renderLocation();
       renderRotations();
+      renderCropLibrary($('#crop-filter').value);
+      if (state.weather) renderWeather();
       renderReports();
       renderEconomics();
       renderFeedback();
       renderSimpleFlow();
+      renderComparisonViews();
       if (!$('[data-simple-stage="4"]')?.hidden) renderSimpleResults();
       const activeTip = $('#simple-agri-tip')?.dataset.topic;
       if (activeTip) showSimpleAgriTip(activeTip);
@@ -576,8 +583,10 @@ function init() {
   window.__fieldshiftIntro ||= initIntro({
     language: state.preferences.language,
   });
-  if (hasLocation()) loadWeather();
-  else {resetWeather("unselected");requestAutoLocation();}
+  if (state.route !== "demo") {
+    if (hasLocation()) loadWeather();
+    else { resetWeather("unselected"); requestAutoLocation(); }
+  }
   state.ready = true;
 }
 
@@ -708,7 +717,140 @@ function initSeasonSimulator() {
   window.addEventListener('fieldshift:updated',render); window.addEventListener('fieldshift:language',render); render();
 }
 
+let mapHandlers;
+let mapLoading;
+
+function loadFieldMap() {
+  if (state.map) return Promise.resolve(state.map);
+  if (mapLoading) return mapLoading;
+  const vendor = globalThis.maplibregl ? Promise.resolve() : new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = 'vendor/maplibre-gl.js';
+    script.onload = resolve;
+    script.onerror = () => {
+      script.remove();
+      reject(new Error('The map could not be loaded. Try again, or choose a location by coordinates.'));
+    };
+    document.head.append(script);
+  });
+  mapLoading = vendor.then(() => {
+    state.map = createFieldMap($('#field-map'), mapHandlers);
+    if (hasLocation()) state.map.setLocation(state.location);
+    if (state.location.boundary) state.map.setBoundary(state.location.boundary);
+    state.map.resize();
+    return state.map;
+  }).finally(() => { mapLoading = null; });
+  return mapLoading;
+}
+
+function withFieldMap(action) {
+  loadFieldMap().then(action).catch(error => toast(t(error.message)));
+}
+
+function revealFieldMap() {
+  const host = $('#map-dock').parentElement;
+  host.hidden = false;
+  const trigger = $('[data-action="load-field-map"]');
+  const home = host.id === 'home-map-host';
+  if (home) trigger.disabled = true;
+  loadFieldMap().then(map => {
+    if (home) trigger.hidden = true;
+    requestAnimationFrame(() => map.resize());
+  }).catch(error => toast(t(error.message))).finally(() => {
+    if (home) trigger.disabled = false;
+  });
+}
+
+const comparisonOptions = [...crops, ...Object.entries(simpleCropEvidence)
+  .filter(([id]) => !crops.some(crop => crop.id === id))
+  .map(([id, crop]) => ({ id, name: crop.name, type: simpleCropStickers[id].category }))];
+let renderComparisonViews = () => {};
+let demoClimate = null;
+let demoClimateRequest;
+let demoClimateStarted = false;
+
+function loadExampleClimate({ retry = false } = {}) {
+  if (demoClimateRequest || (demoClimateStarted && !retry)) return;
+  demoClimateStarted = true;
+  demoClimateRequest = fetchNasa(exampleField).then(result => {
+    demoClimate = result;
+  }).catch(() => {
+    demoClimate = null;
+  }).finally(() => {
+    demoClimateRequest = null;
+    renderComparisonViews();
+  });
+  renderComparisonViews();
+}
+
+function rotationContext() {
+  if (!hasLocation()) return null;
+  const latest = state.samples.filter(sample => sample.field === fieldKey() && sample.date && number(sample.ph))
+    .sort((a, b) => b.date.localeCompare(a.date))[0];
+  const ph = $('#planner-ph').value;
+  const soil = latest
+    ? t('Latest recorded soil sample') + ' · ' + reportDate(latest.date, currentLanguage()) + ' · ' + t('Soil pH') + ' ' + reportNumber(latest.ph, currentLanguage(), 1)
+    : ph ? t('Farmer-entered soil pH') + ' · ' + reportNumber(Number(ph), currentLanguage(), 1) : t('No dated soil sample for this field.');
+  return {
+    key: fieldKey(),
+    name: reportLocationName(state.location, t),
+    soil,
+    water: state.fieldSettings[fieldKey()]?.planner?.irrigation === 'irrigated'
+      ? t('Irrigation available') : t('Confirm the available water source for this rotation.'),
+    currency: state.economicsInputs.currency,
+    climate: state.nasa?.location?.lat === state.location.lat && state.nasa.location.lon === state.location.lon ? state.nasa : null,
+    loading: simpleClimateRequest?.location === state.location && simpleClimateRequest.status === 'loading',
+  };
+}
+
+function mountComparisonViews() {
+  $('#rotation-plans').insertAdjacentHTML('beforebegin', '<article class="panel rotation-comparison"><div id="rotation-comparison"></div>' +
+    '<button class="button secondary" type="button" data-action="load-rotation-climate" hidden>Load historical data</button></article>');
+  $('#view-reports').insertAdjacentHTML('beforeend', '<article class="panel rotation-comparison" id="report-rotation-summary" hidden></article>');
+  $('.app-footer').insertAdjacentHTML('beforebegin', '<section class="view" id="view-demo" hidden>' +
+    '<div class="page-heading"><div><span class="eyebrow">Example field</span><h1>Compare two crop rotations</h1>' +
+    '<p>Try a two-season comparison near Al Kharj, Saudi Arabia. The plans and local assumptions are examples. NASA data is regional.</p></div>' +
+    '<div class="button-row"><button class="button secondary" type="button" data-action="demo-language" lang="ar">العربية</button>' +
+    '<button class="button secondary" type="button" data-action="close-example-field">Back to workspace</button></div></div>' +
+    '<article class="panel rotation-comparison"><p class="rotation-example-label">Example field · sample planning inputs</p>' +
+    '<div id="demo-rotation-comparison"></div><button class="button secondary" type="button" data-action="retry-demo-climate">Retry historical data</button></article></section>');
+
+  const getExample = () => ({
+    key: 'example', name: t(exampleField.name), soil: t(exampleField.soil), water: t(exampleField.water),
+    currency: exampleField.currency, climate: demoClimate, loading: Boolean(demoClimateRequest), demo: true,
+  });
+  const renderField = mountRotationComparison({
+    host: $('#rotation-comparison'), options: comparisonOptions, getContext: rotationContext,
+    readRecord: key => state.fieldSettings[key]?.rotationComparison,
+    writeRecord: (key, record) => {
+      state.fieldSettings[key] = { ...state.fieldSettings[key], rotationComparison: record };
+      write('fieldshift.fieldSettings', state.fieldSettings);
+      renderComparisonViews();
+    },
+  });
+  const renderExample = mountRotationComparison({
+    host: $('#demo-rotation-comparison'), options: comparisonOptions, getContext: getExample, demo: true,
+  });
+  renderComparisonViews = () => {
+    renderField();
+    renderExample();
+    const languageButton = $('[data-action="demo-language"]');
+    languageButton.lang = currentLanguage() === 'ar' ? 'en' : 'ar';
+    languageButton.textContent = languageButton.lang === 'ar' ? 'العربية' : 'English';
+    const retry = $('[data-action="retry-demo-climate"]');
+    retry.hidden = Boolean(demoClimate || demoClimateRequest);
+    const host = $('#report-rotation-summary');
+    const context = rotationContext();
+    $('[data-action="load-rotation-climate"]').hidden = !context || Boolean(context.climate || context.loading);
+    const comparison = context && state.fieldSettings[context.key]?.rotationComparison;
+    host.hidden = !comparison;
+    if (comparison) renderRotationReport(host, comparison, context, comparisonOptions);
+  };
+  renderComparisonViews();
+}
+
 function navigate() {
+  const previousRoute = state.route;
   const candidate =
     location.hash.replace(/^#\/?/, "").split("?")[0] || "overview";
   state.route = [
@@ -725,6 +867,7 @@ function navigate() {
     "feedback",
     "settings",
     "about",
+    "demo",
   ].includes(candidate)
     ? candidate
     : "overview";
@@ -754,6 +897,7 @@ function navigate() {
       feedback: "Comments & feedback",
       settings: "Settings",
       about: "About us",
+      demo: "Example field",
     }[state.route],
   );
   const target = state.route === "map"
@@ -762,11 +906,15 @@ function navigate() {
       ? $("#simple-map-host")
       : $("#home-map-host");
   target?.append($("#map-dock"));
+  if (state.route === "map") revealFieldMap();
+  if (state.route === "demo") loadExampleClimate();
+  if (state.route === 'crops' && hasLocation()) { loadSimpleClimate(); renderComparisonViews(); }
   document.body.classList.remove("menu-open");
   requestAnimationFrame(() => {
     state.map?.resize();
     requestAnimationFrame(() => state.map?.resize());
   });
+  if (state.ready && hasLocation() && !state.weather && candidate !== 'demo' && previousRoute === 'demo') loadWeather();
   if (state.ready) window.scrollTo({ top: 0, behavior: "instant" });
 }
 
@@ -1130,8 +1278,9 @@ function loadSimpleClimate({ force = false } = {}) {
   }).catch(() => {
     request.status = 'unavailable';
   }).finally(() => {
-    if (state.location === location && simpleClimateRequest === request && !$('[data-simple-stage="4"]')?.hidden) {
-      renderSimpleResults();
+    if (state.location === location && simpleClimateRequest === request) {
+      renderComparisonViews();
+      if (!$('[data-simple-stage="4"]')?.hidden) renderSimpleResults();
     }
   });
 }
@@ -1698,24 +1847,36 @@ function bindEvents() {
       coordinates: useCoordinates,
       geolocation: useDeviceLocation,
       draw: () => {
-        state.map.startDrawing();
+        withFieldMap(map => map.startDrawing());
         setMapModeButtons("map");
       },
-      "finish-draw": () => state.map.finishDrawing(),
-      "clear-boundary": () => state.map.clearBoundary(),
+      "finish-draw": () => withFieldMap(map => map.finishDrawing()),
+      "clear-boundary": () => {
+        if (state.map) state.map.clearBoundary();
+        else mapHandlers.onBoundary(null);
+      },
       "save-field": saveField,
       refresh: () => hasLocation()?loadWeather(true):$('#location-dialog').showModal(),
       "soil-dialog": () => hasLocation()?$("#soil-dialog").showModal():$('#location-dialog').showModal(),
       "compare-plans": () => {
-        renderRotations();
-        toast("Rotation comparisons updated");
+        $("#rotation-comparison").scrollIntoView({ block: "start", behavior: "smooth" });
+        $("#rotation-comparison select")?.focus({ preventScroll: true });
       },
       "simple-analysis": runSimpleAnalysis,
       "simple-settings": () => $('#simple-settings-dialog')?.showModal(),
       "simple-map-focus": () => {
+        revealFieldMap();
         $('#simple-map-host')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        requestAnimationFrame(() => state.map?.resize());
       },
+      "load-field-map": () => revealFieldMap(),
+      "retry-demo-climate": () => loadExampleClimate({ retry: true }),
+      "demo-language": () => {
+        const picker = $("#language");
+        picker.value = currentLanguage() === "ar" ? "en" : "ar";
+        picker.dispatchEvent(new Event("change", { bubbles: true }));
+      },
+      "close-example-field": () => { location.hash = document.body.classList.contains("simple-farmer") ? "/simple" : "/overview"; },
+      "load-rotation-climate": () => { loadSimpleClimate({ force: true }); renderComparisonViews(); },
       "close-simple-settings": () => $('#simple-settings-dialog')?.close(),
       "simple-save": () => downloadSimpleReport(),
       "simple-climate-retry": () => { loadSimpleClimate({ force: true }); renderSimpleResults(); },
@@ -1790,13 +1951,13 @@ function bindEvents() {
   });
   $$("[data-map-mode]").forEach((button) =>
     button.addEventListener("click", () => {
-      state.map.setMode(button.dataset.mapMode);
+      withFieldMap(map => map.setMode(button.dataset.mapMode));
       setMapModeButtons(button.dataset.mapMode);
     }),
   );
   $$("[data-map-layer]").forEach((button) =>
     button.addEventListener("click", () => {
-      state.map.setLayer(button.dataset.mapLayer);
+      withFieldMap(map => map.setLayer(button.dataset.mapLayer));
       const legend = $('#thermal-legend');
       const legends = {
         thermal: '<b>NASA MODIS Terra NDVI</b><p>Latest available vegetation-greenness imagery. It does not identify crops or measure one field.</p>',
@@ -2051,7 +2212,7 @@ function renderLocation() {
     ".field-picker>.eyebrow",
     selected ? "ACTIVE LOCATION" : "FIELD REQUIRED",
   );
-  text("[data-field-name]", l.name);
+  text("[data-field-name]", selected ? reportLocationName(l, t) : t("Choose your field"));
   text(
     "[data-coordinates]",
     selected
@@ -2062,11 +2223,11 @@ function renderLocation() {
           Math.abs(l.lon).toFixed(4) +
           "° " +
           (l.lon >= 0 ? "E" : "W")
-      : "Choose a point, field boundary, or GeoJSON",
+      : t("Choose a point, field boundary, or GeoJSON"),
   );
   text(
     "#selection-type",
-    selected ? l.method.toUpperCase() : "NO FIELD SELECTED",
+    selected ? t(l.method).toUpperCase() : t("NO FIELD SELECTED"),
   );
   const area = l.boundary ? polygonAreaHa(l.boundary) : null;
   text(
@@ -2083,7 +2244,7 @@ function renderLocation() {
   );
   text(
     "#report-area",
-    area ? area.toFixed(2) + " hectares" : "Point selection",
+    area ? reportMeasure(area, "ha", 2) : t("Point selection"),
   );
   $("#field-name-input").value = selected ? l.name : "";
   renderReports();
@@ -2355,18 +2516,19 @@ function selectLocation(point, move = true) {
   }
   clearNasa();
   // A new point does not inherit a previous field’s geometry.
-  state.map.clearBoundary();
+  state.map?.clearBoundary();
   if (point.boundary) {
     state.location.boundary = point.boundary;
-    state.map.setBoundary(point.boundary);
+    state.map?.setBoundary(point.boundary);
   }
   restoreFieldSettings();
-  if (move) state.map.setLocation(point);
+  if (move) state.map?.setLocation(point);
   write("fieldshift.location", state.location);
   ensureSimpleAssumptions();
   renderLocation();
   renderSimpleFlow();
   loadWeather();
+  if (state.route === 'crops') { loadSimpleClimate(); renderComparisonViews(); }
   updateSimpleCurrency().then(() => { if (!$('[data-simple-stage="4"]')?.hidden) renderSimpleResults(); });
 }
 async function searchSimpleLocation(event) {
@@ -2626,6 +2788,8 @@ async function loadWeather(force=false) {
 }
 function resetWeather(status) {
   renderFieldDataControls(status);
+  text("#water-source", "Weather data unavailable");
+  text("#water-rain-label", "7-day precipitation");
   [
     "temperature",
     "rainWeek",
@@ -2694,11 +2858,14 @@ function renderWeather() {
   if (!w) return;
   renderFieldDataControls('ready');
   const c = w.current;
+  const report = simpleReportWeather(w, t);
+  text("#water-source", reportWeatherSource(report, t));
+  text("#water-rain-label", report.kind === "forecast" ? "7-day forecast rain" : "Recent 7-day rainfall");
   text('[data-stat="temperature"]', temp(c.temperature));
   text('[data-stat="conditions"]', formatWeatherCode(c.weatherCode));
   text('[data-stat="moisture"]', moisture(c.soilMoisture));
-  text('[data-stat="rainWeek"]', rain(total(w.daily, "rain")));
-  text('[data-stat="etWeek"]', rain(total(w.daily, "et0")));
+  text('[data-stat="rainWeek"]', rain(report.sevenDay.rainMm));
+  text('[data-stat="etWeek"]', rain(report.sevenDay.referenceEt0Mm));
   text('[data-stat="feelsLike"]', temp(c.feelsLike));
   text('[data-stat="humidity"]', number(c.humidity) ? c.humidity + "%" : "—");
   text('[data-stat="wind"]', wind(c.wind));
@@ -3010,7 +3177,7 @@ function renderRotations() {
       (plan, i) =>
         '<article class="rotation-plan ' +
         (plan.id === state.selectedPlan ? "selected" : "") +
-        '"><div class="plan-top"><span class="plan-number">PATH / 0' +
+        '"><div class="plan-top"><span class="plan-number">' + escapeHTML(t('PATH')) + ' / 0' +
         (i + 1) +
         '</span><span class="pill">' +
         (plan.id === state.selectedPlan ? "SELECTED" : "TRAIT SCREENING") +
@@ -3089,27 +3256,21 @@ function renderCropLibrary(filter = "") {
   $("#crop-library").innerHTML =
     crops
       .filter((c) =>
-        (c.name + " " + c.family + " " + c.type)
+        (c.name + " " + t(c.name) + " " + c.family + " " + c.type)
           .toLowerCase()
           .includes(filter.toLowerCase()),
       )
       .map(
         (c) =>
           '<article class="crop-library-card"><span class="crop-sticker" aria-hidden="true">' + (stickers[c.id] || '🌱') + '</span><span class="eyebrow">' +
-          escapeHTML(c.family.toUpperCase()) +
+          escapeHTML(t(c.family.toUpperCase())) +
           "</span><h3>" +
           escapeHTML(c.name) +
           "</h3><p>" +
           escapeHTML(c.notes) +
           '</p><div class="crop-traits"><span>' +
-          escapeHTML(c.season) +
-          "</span><span>pH " +
-          c.phMin +
-          "–" +
-          c.phMax +
-          "</span><span>" +
-          escapeHTML(c.waterDemand) +
-          ' demand</span></div><a href="' +
+          escapeHTML(t(c.season)) +
+          "</span></div><a href=\"" +
           escapeHTML(c.reference) +
           '" target="_blank" rel="noreferrer">FAO crop reference ↗</a></article>',
       )
@@ -3549,12 +3710,12 @@ function assistantFieldContext() {
       : null,
     weather: weather
       ? {
-          source: "NASA POWER Daily API",
+          source: state.weather.source,
           record_time: weather.time,
           temperature_c: weather.temperature,
           humidity_percent: weather.humidity,
-          wind_m_s: weather.wind,
-          classification: "Recent historical regional context; not a forecast",
+          wind_km_h: weather.wind,
+          classification: state.weather.classification,
         }
       : null,
     soil_records: samples.map((sample) => ({
@@ -3709,6 +3870,8 @@ function initAssistant() {
 function evidenceRows() {
   const w = state.weather,
     c = w?.current,
+    weatherSource = reportWeatherSource({ source: w?.source, kind: w?.source.includes("Open-Meteo") ? "forecast" : "historical" }, t),
+    forecast = w?.source.includes("Open-Meteo"),
     source =
       priceSourceNames[state.economicsInputs.priceSource] || "User estimate",
     dated = state.economicsInputs.priceDate
@@ -3718,14 +3881,14 @@ function evidenceRows() {
     [
       "Air temperature",
       c ? temp(c.temperature) : "Unavailable",
-      "Recent regional record",
-      "NASA POWER",
+      w ? forecast ? "Model forecast" : "Recent regional record" : "Unavailable",
+      weatherSource,
     ],
     [
-      "Recent 7-day rainfall",
-      w ? rain(total(w.daily, "rain")) : "Unavailable",
-      "Historical regional context",
-      "NASA POWER",
+      forecast ? "7-day forecast rain" : "Recent 7-day rainfall",
+      w ? rain(simpleReportWeather(w, t).sevenDay.rainMm) : "Unavailable",
+      w ? forecast ? "Model forecast" : "Historical regional context" : "Unavailable",
+      weatherSource,
     ],
     [
       "Surface moisture",
@@ -3747,20 +3910,21 @@ function evidenceRows() {
     ],
     [
       "Selected point",
-      state.location.lat.toFixed(4) + ", " + state.location.lon.toFixed(4),
+      hasLocation() ? state.location.lat.toFixed(4) + ", " + state.location.lon.toFixed(4) : "Unavailable",
       state.location.method,
       "Your selection",
     ],
   ];
 }
 function renderReports() {
+  renderComparisonViews();
   const body = $("#report-data");
   if (!body) return;
   body.innerHTML = evidenceRows()
     .map(
       (row) =>
         "<tr>" +
-        row.map((value) => "<td>" + escapeHTML(value) + "</td>").join("") +
+        row.map((value) => "<td><bdi>" + escapeHTML(t(value)) + "</bdi></td>").join("") +
         "</tr>",
     )
     .join("");
@@ -3777,16 +3941,20 @@ function download(name, content, type) {
 function exportCSV() {
   const rows = [
     ["AgriPulse field intelligence report"],
-    ["Location", state.location.name],
+    ["Location", reportLocationName(state.location, t)],
     ["Retrieved", state.weather?.retrievedAt ?? "Unavailable"],
     ["Signal", "Value", "Evidence type", "Source"],
     ...evidenceRows(),
   ];
   download(
     "fieldshift-report.csv",
-    rows
+    "\ufeff" + rows
       .map((row) =>
-        row.map((v) => '"' + String(v).replace(/"/g, '""') + '"').join(","),
+        row.map((value) => {
+          const text = String(t(value));
+          const safe = /^[\s\uFEFF]*[=+@-]/.test(text) && !/^-?\d+([.,]\d+)?$/.test(text) ? "'" + text : text;
+          return '"' + safe.replace(/"/g, '""') + '"';
+        }).join(","),
       )
       .join("\r\n"),
     "text/csv;charset=utf-8",
