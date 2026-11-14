@@ -14,9 +14,11 @@ AgriPulse is an interactive agricultural decision workspace created for the **20
 
 **[Read sources, third-party notices, media rights and SI disclosure](CREDITS-AND-SOURCES.md)**
 
-> **Legacy media warning:** The older `media/AgriPulse_Space_to_Soil.pdf` is an **8-page, image-only conceptual deck**, *not* the verified seven-slide judging presentation. Its slides include planned irrigation-alert and water-saving claims that the source code does not validate. The two `media/*.mp4` videos and promotional thumbnail have unresolved author/AI/watermark provenance and should not be presented as cleared judging media until reviewed. Their files remain in the repository for an auditable history.
+> **Legacy media warning:** The old 8-page image-only concept deck and unverified introduction videos/thumbnail have been **removed from the current tree** and are **not the submitted judging presentation**. Historical versions remain visible in git history for honest attribution, but must not be represented as validated irrigation, field-SMAP or water-saving evidence.
 
-![AgriPulse field view](dist/assets/field-landscape.jpg)
+![SI-generated conceptual agricultural landscape — not observational imagery](dist/assets/field-landscape.svg)
+
+> **Visual provenance:** The current website uses 16 original, SI-assisted vector illustrations with a visible SI-generated watermark. They are schematic artwork, **not satellite observations or real farm photography**. The old photos, promotional NASA-badged thumbnail, unverified concept videos, obsolete pitch PDF and the cached standalone HTML were removed from the current Git tree; their previous versions remain recoverable through Git history.
 
 ## ✨ What AgriPulse does
 
@@ -83,6 +85,8 @@ AgriPulse was built by a student technology team exploring how NASA Earth data c
 - [Data sources, third-party credits, media rights and AI disclosure audit](CREDITS-AND-SOURCES.md)
 - [29-asset visual/video/PDF rights and origin register](audit/ASSET-PROVENANCE-REGISTER.csv)
 - [Media rights review and urgent fixes](audit/MEDIA-AND-SUBMISSION-REVIEW.md)
+- [Current replacement artwork and unresolved identity-logo rights](audit/VISUAL-REPLACEMENTS.md)
+- [Fact-checked seven-slide judging narrative](docs/SPACE-APPS-7-SLIDE-NARRATIVE.md)
 - [Open blocker: resolve SI media, NASA logo and watermark evidence](https://github.com/ameer-marwan/AgriPulse/issues/6)
 - [Ready-to-copy NASA submission source fields](audit/SPACE-APPS-FORM-LINKS.md)
 
