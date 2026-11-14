@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-label="Rice terraces in China — SI-generated conceptual illustration, not observational imagery">
+<title>Rice terraces in China | SI-generated conceptual visual</title>
+<defs>
+<linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#A0D9F7"/><stop offset=".83" stop-color="#E5F6F3"/></linearGradient>
+<radialGradient id="sun" cx=".75" cy=".3"><stop offset="0" stop-color="#FFF9DD" stop-opacity=".82"/><stop offset="1" stop-color="#FFF9DD" stop-opacity="0"/></radialGradient>
+<linearGradient id="earthShine" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#DDF5FF" stop-opacity=".45"/><stop offset=".6" stop-color="#0074B5" stop-opacity="0"/><stop offset="1" stop-color="#05243B" stop-opacity=".5"/></linearGradient>
+</defs>
+<rect width="1600" height="900" fill="url(#sky)"/>
+<rect width="1600" height="900" fill="url(#sun)"/>
+<circle cx="1240" cy="200" r="83" fill="#F7E9B4" fill-opacity=".7"/>
+<path d="M0 610Q300 500 640 620T1600 540V900H0Z" fill="#31594A"/><path d="M0 675Q380 520 730 666T1600 615V900H0Z" fill="#76A858"/><path d="M0 735Q390 590 800 736T1600 690V900H0Z" fill="#5D8E4D"/><g fill="none" stroke="#E7F5C9" stroke-opacity=".35" stroke-width="9"><path d="M0 670Q490 500 905 655T1600 590"/><path d="M0 710Q490 543 905 695T1600 635"/><path d="M0 750Q490 586 905 735T1600 680"/><path d="M0 790Q490 629 905 775T1600 725"/><path d="M0 830Q490 672 905 815T1600 770"/><path d="M0 870Q490 715 905 855T1600 815"/></g>
+<rect x="42" y="810" width="700" height="54" rx="12" fill="#061720" fill-opacity=".76"/>
+<text x="63" y="844" fill="#E9F9ED" font-size="24" font-family="Arial,sans-serif" font-weight="700" letter-spacing="1">SI-GENERATED VISUAL · ILLUSTRATION</text>
+</svg>
